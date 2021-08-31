@@ -1,8 +1,11 @@
-import { } from './peripheral/loadEnv';
+import './peripheral/loadEnv.js';
 import Koa from 'koa';
-import userController from './controller/user';
+import userController from './controller/user.js';
+import bodyParser from 'koa-bodyparser';
 
 const app = new Koa();
+
+app.use(bodyParser())
 
 app.use(userController.routes());
 app.use(userController.allowedMethods());

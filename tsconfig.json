@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
-    "baseUrl": "src",
     "outDir": "build",
+    "rootDir": "src",
     "target": "es2017",
     "module": "esnext",
     "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
   }
 }
