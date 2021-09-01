@@ -660,6 +660,11 @@ raw-body@^2.3.3:
     iconv-lite "0.4.24"
     unpipe "1.0.0"
 
+rhax@^2.0.0-alpha.1:
+  version "2.0.0-alpha.1"
+  resolved "https://registry.yarnpkg.com/rhax/-/rhax-2.0.0-alpha.1.tgz#231cac6d3854ede73132c0581265980e8b4b3541"
+  integrity sha512-Zs/lWuytFoR1Fc/E6H9zbwXyDFNYZTThBipVXbPlt6jUzw9XDDtY/6u5GsQV5gyQu2BsRxajW0UvLLez3bl7kA==
+
 safe-buffer@5.1.2:
   version "5.1.2"
   resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.1.2.tgz#991ec69d296e0313747d59bdfd2b745c35f8828d"
