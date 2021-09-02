@@ -11,4 +11,4 @@ export const GroupWithIdSchema = GroupSchema.extend({
   _id: ObjectIdSchema
 });
 
-export interface GroupWithId extends z.input<typeof GroupWithIdSchema> {}
+export interface GroupWithId extends z.infer<typeof GroupWithIdSchema> {}

@@ -35,6 +35,7 @@ router.get('/:_id',
 
     const user = await userCollection.findOne({ _id });
     if (!user) {
+      ctx.status = 400;
       ctx.body = err('No user exists with the given id')
       return;
     }

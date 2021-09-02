@@ -49,7 +49,7 @@ router.post('/',
 const PartialGroupWithIdSchema = GroupWithIdSchema.partial();
 
 router.patch('/',
-  validate(PartialGroupWithIdSchema, ['body']),
+  validate(PartialGroupWithIdSchema, ['request', 'body']),
   middlewareGuard(async ctx => {
     const group = ctx.body;
 
@@ -72,7 +72,7 @@ router.patch('/',
 );
 
 router.delete('/',
-  validate(ObjectIdSchema, ['body', '_id']),
+  validate(ObjectIdSchema, ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
     const { _id } = ctx.body;
 
@@ -92,10 +92,10 @@ router.delete('/',
 
 
 router.get('/management',
-  middlewareGuard((ctx, next) => {
+  middlewareGuard(ctx => {
 
   }),
-  middlewareGuard((ctx, next) => {
+  middlewareGuard(ctx => {
 
   })
 );
