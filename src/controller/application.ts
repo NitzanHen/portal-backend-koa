@@ -99,3 +99,5 @@ router.delete('/',
     ctx.body = ok(response.value);
   })
 )
+
+export default router;
