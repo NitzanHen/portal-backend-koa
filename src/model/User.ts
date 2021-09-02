@@ -19,4 +19,4 @@ export const UserWithIdSchema = UserSchema.extend({
   _id: ObjectIdSchema
 });
 
-export interface UserWithId extends z.infer<typeof UserWithIdSchema> {}
+export interface UserWithId extends z.input<typeof UserWithIdSchema> {}

@@ -1,7 +1,7 @@
 import { Middleware } from 'koa';
 import { reduce } from 'rhax';
 import { Schema } from 'zod';
-import { err } from '../common/Result';
+import { err } from '../common/Result.js';
 
 const get = (o: any, path: string[]) => reduce(
   (acc, key) => acc[key],

@@ -16,24 +16,24 @@ router.get('/', middlewareGuard(async ctx => {
   ctx.body = ok(users);
 }));
 
-router.get('/:id',
+router.get('/:_id',
   middlewareGuard(async (ctx, next) => {
     // Validate id
-    const { id } = ctx.params
-    const result = ObjectIdSchema.safeParse(id);
+    const { _id } = ctx.params
+    const result = ObjectIdSchema.safeParse(_id);
     if (!result.success) {
       ctx.status = 400;
       ctx.body = err(result.error)
       return;
     }
 
-    ctx.params.id = result.data;
+    ctx.params._id = result.data;
     await next()
   }),
   middlewareGuard(async ctx => {
-    const { id } = ctx.params;
+    const { _id } = ctx.params;
 
-    const user = await userCollection.findOne({ _id: id });
+    const user = await userCollection.findOne({ _id });
     if (!user) {
       ctx.body = err('No user exists with the given id')
       return;
@@ -60,9 +60,6 @@ router.post('/',
     const user = ctx.request.body;
 
     const response = await userCollection.insertOne(user);
-    if (!response.acknowledged) {
-      throw new Error('unknown error occured when attempting to insert the new user into the database');
-    }
 
     ctx.body = ok({ _id: response.insertedId, ...user })
   }));

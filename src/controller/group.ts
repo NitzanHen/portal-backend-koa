@@ -2,6 +2,7 @@ import Router from '@koa/router';
 import { err, ok } from '../common/Result.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
+import { GroupSchema, GroupWithIdSchema } from '../model/Group.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
 import { db } from '../peripheral/db.js';
 
@@ -12,7 +13,7 @@ const router = new Router({
 });
 
 router.get('/',
-  middlewareGuard(async (ctx, next) => {
+  middlewareGuard(async ctx => {
     const groups = await groupCollection.find({}).toArray();
 
     ctx.body = ok(groups);
@@ -25,7 +26,7 @@ router.get('/:id',
     const { id } = ctx.params;
     const group = await groupCollection.findOne({ _id: id });
 
-    if(!group) {
+    if (!group) {
       ctx.status = 400;
       ctx.body = err('No group exists with the given id');
       return;
@@ -35,31 +36,60 @@ router.get('/:id',
 );
 
 router.post('/',
-  middlewareGuard((ctx, next) => {
+  validate(GroupSchema, ['request', 'body']),
+  middlewareGuard(async ctx => {
+    const group = ctx.request.body;
 
-  }),
-  middlewareGuard((ctx, next) => {
+    const response = await groupCollection.insertOne(group);
 
+    ctx.body = ok({ _id: response.insertedId, ...group });
+  })
+);
+
+const PartialGroupWithIdSchema = GroupWithIdSchema.partial();
+
+router.patch('/',
+  validate(PartialGroupWithIdSchema, ['body']),
+  middlewareGuard(async ctx => {
+    const group = ctx.body;
+
+    const response = await groupCollection.findOneAndUpdate(
+      { _id: group._id },
+      { $set: group },
+      { returnDocument: 'after' }
+    );
+
+    if (!response.ok) {
+      throw new Error('unknown error occured when attempting to update the group');
+    }
+    else if (!response.value) {
+      ctx.status = 400;
+      ctx.body = err("No group exists with the given id")
+    }
+
+    ctx.body = ok(response.value)
   })
 );
 
 router.delete('/',
-  middlewareGuard((ctx, next) => {
+  validate(ObjectIdSchema, ['body', '_id']),
+  middlewareGuard(async ctx => {
+    const { _id } = ctx.body;
 
-  }),
-  middlewareGuard((ctx, next) => {
+    const response = await groupCollection.findOneAndDelete({ _id });
+    if (!response.ok) {
+      throw new Error('Unknown error occured while attempting to delete a group');
+    }
+    else if (!response.value) {
+      ctx.status = 400;
+      ctx.body = err("No group exists with the given id");
+      return;
+    }
 
+    ctx.body = ok(response.value);
   })
 );
 
-router.patch('/',
-  middlewareGuard((ctx, next) => {
-
-  }),
-  middlewareGuard((ctx, next) => {
-
-  })
-);
 
 router.get('/management',
   middlewareGuard((ctx, next) => {
