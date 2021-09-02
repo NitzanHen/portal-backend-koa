@@ -6,7 +6,8 @@ export const NotificationSchema = z.object({
   title: z.string(),
   description: z.string(),
   poster: ObjectIdSchema,
-  applications: z.array(ObjectIdSchema),
+  applications: z.array(ObjectIdSchema).default(() => []),
+  groups: z.array(ObjectIdSchema).default(() => []),
   postDate: DateStringSchema,
   expirationDate: DateStringSchema.optional()
 });

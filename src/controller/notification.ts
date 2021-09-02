@@ -4,19 +4,34 @@ import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
 import { NotificationSchema, NotificationWithIdSchema } from '../model/Notification.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
+import { User } from '../model/User.js';
 import { db } from '../peripheral/db.js';
 
 const notificationController = db.collection('notifications');
+const userController = db.collection('users');
 
 const router = new Router({
   prefix: '/notification'
 });
 
-router.get('/', middlewareGuard(async ctx => {
-  const notifications = await notificationController.find({}).toArray();
+router.get('/',
+  validate(ObjectIdSchema.optional(), ['query', 'userId']),
+  middlewareGuard(async ctx => {
+    const { userId } = ctx.query
 
-  ctx.body = ok(notifications);
-}));
+    const groups: User['groups'] | null = (
+      userId && (await userController.findOne(
+        { _id: userId },
+        {
+          projection: { groups: 1 }
+        }))?.groups
+    ) ?? null;
+
+    const filter = groups ? { $in: groups } : {}
+    const notifications = await notificationController.find(filter).toArray();
+
+    ctx.body = ok(notifications);
+  }));
 
 router.get('/:_id',
   validate(ObjectIdSchema, ['params', '_id']),
@@ -24,7 +39,7 @@ router.get('/:_id',
     const { _id } = ctx.params;
 
     const notification = await notificationController.findOne({ _id });
-    if(!notification) {
+    if (!notification) {
       ctx.status = 400;
       ctx.body = err('No notification exists with the given id');
     }
@@ -39,7 +54,7 @@ router.post('/',
     const notification = ctx.request.body;
 
     const response = await notificationController.insertOne(notification);
-    
+
     ctx.body = ok({ _id: response.insertedId, ...notification });
   })
 )

@@ -7,14 +7,21 @@ import { ObjectIdSchema } from '../model/ObjectId.js';
 import { db } from '../peripheral/db.js';
 
 const groupCollection = db.collection('groups');
+const userCollection = db.collection('users');
 
 const router = new Router({
   prefix: '/group'
 });
 
 router.get('/',
+  validate(ObjectIdSchema.optional(), ['query', 'userId']),
   middlewareGuard(async ctx => {
-    const groups = await groupCollection.find({}).toArray();
+    const { userId } = ctx.query;
+
+    const user = (userId && (await userCollection.findOne({ _id: userId }))) ?? null
+
+    const filter = user ? { $in: user.groups } : {}
+    const groups = await groupCollection.find(filter).toArray();
 
     ctx.body = ok(groups);
   })
