@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ObjectIdSchema } from './ObjectId.js';
 
 export const UserSchema = z.object({
-  adId: ObjectIdSchema,
+  oid: ObjectIdSchema,
   firstName: z.string(),
   lastName: z.string(),
   displayName: z.string(),
