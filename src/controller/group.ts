@@ -6,22 +6,19 @@ import { validate } from '../middleware/validate.js';
 import { GroupSchema, GroupWithIdSchema } from '../model/Group.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
 import { db } from '../peripheral/db.js';
+import { CtxState } from '../types/CtxState.js';
 
 const groupCollection = db.collection('groups');
-const userCollection = db.collection('users');
 
-const router = new Router({
+const router = new Router<CtxState>({
   prefix: '/group'
 });
 
 router.get('/',
   middlewareGuard(async ctx => {
-    const { userId } = ctx.query;
+    const { user } = ctx.state;
 
-    const user = (userId && (await userCollection.findOne({ _id: userId }))) ?? null
-
-    const filter = user ? { $in: user.groups } : {}
-    const groups = await groupCollection.find(filter).toArray();
+    const groups = await groupCollection.find({ $in: user.groups }).toArray();
 
     ctx.body = ok(groups);
   })

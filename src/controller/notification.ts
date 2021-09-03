@@ -5,31 +5,19 @@ import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
 import { NotificationSchema, NotificationWithIdSchema } from '../model/Notification.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
-import { User } from '../model/User.js';
 import { db } from '../peripheral/db.js';
 
-const notificationController = db.collection('notifications');
-const userController = db.collection('users');
+const notificationController = db.collection('notifications')
 
 const router = new Router({
   prefix: '/notification'
 });
 
 router.get('/',
-  validate(ObjectIdSchema.optional(), ['query', 'userId']),
   middlewareGuard(async ctx => {
-    const { userId } = ctx.query
+    const { user } = ctx.state
 
-    const groups: User['groups'] | null = (
-      userId && (await userController.findOne(
-        { _id: userId },
-        {
-          projection: { groups: 1 }
-        }))?.groups
-    ) ?? null;
-
-    const filter = groups ? { $in: groups } : {}
-    const notifications = await notificationController.find(filter).toArray();
+    const notifications = await notificationController.find({ $in: user.groups }).toArray();
 
     ctx.body = ok(notifications);
   }));

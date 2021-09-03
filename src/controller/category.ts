@@ -8,21 +8,14 @@ import { ObjectIdSchema } from '../model/ObjectId.js';
 import { db } from '../peripheral/db.js';
 
 const categoryCollection = db.collection('categories');
-const userCollection = db.collection('users');
 
 const router = new Router({
   prefix: '/categories'
 });
 
 router.get('/',
-  validate(ObjectIdSchema.optional(), ['query', 'userId']),
   middlewareGuard(async ctx => {
-    const { userId } = ctx.query;
-
-    const user = (userId && (await userCollection.findOne({ _id: userId }))) ?? null
-
-    const filter = user ? { $in: user.categories } : {}
-    const categories = await categoryCollection.find(filter).toArray();
+    const categories = await categoryCollection.find({}).toArray();
 
     ctx.body = ok(categories);
   })

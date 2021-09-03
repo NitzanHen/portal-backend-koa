@@ -8,21 +8,14 @@ import { TagSchema, TagWithIdSchema } from '../model/Tag.js';
 import { db } from '../peripheral/db.js';
 
 const tagCollection = db.collection('tags');
-const userCollection = db.collection('users');
 
 const router = new Router({
   prefix: '/tag'
 });
 
 router.get('/',
-  validate(ObjectIdSchema.optional(), ['query', 'userId']),
   middlewareGuard(async ctx => {
-    const { userId } = ctx.query;
-
-    const user = (userId && (await userCollection.findOne({ _id: userId }))) ?? null
-
-    const filter = user ? { $in: user.tags } : {}
-    const tags = await tagCollection.find(filter).toArray();
+    const tags = await tagCollection.find({}).toArray();
 
     ctx.body = ok(tags);
   })
