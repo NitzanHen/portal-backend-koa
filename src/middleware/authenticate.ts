@@ -4,6 +4,8 @@ import axios from 'axios';
 import { getEnvVariableSafely } from '../common/getEnvVariableSafely.js';
 import { db } from '../peripheral/db.js';
 import { middlewareGuard } from './middlewareGuard.js';
+import { CtxState } from '../types/CtxState.js';
+import { User } from '../model/User.js';
 
 const tokenEndpoint = getEnvVariableSafely('AZURE_AD_TOKEN_ENDPOINT');
 const clientId = getEnvVariableSafely('AZURE_CLIENT_ID');
@@ -61,7 +63,7 @@ const bearerRegex = /^Bearer ([A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/
  * Authenticator middleware; expects an OAuth2 Bearer token, i.e.
  * an Authorization header containing `Bearer [token]`, where token is a JWT token.
  */
-export const authenticate: Middleware = middlewareGuard(async (ctx, next) => {
+export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, next) => {
   if (!kidSignatureRecord) {
     console.error('kid signature record is not loaded; cannot authenticate requests');
     return ctx.throw(500);
@@ -125,6 +127,8 @@ export const authenticate: Middleware = middlewareGuard(async (ctx, next) => {
     throw new Error('Valid JWT token received that has no oid field');
   }
 
+  /** @todo check iat and exp fields */
+
   // All checks passed. Fetch a user and attach it to ctx.
   // Note that from this point, we don't return 401 on an error - the user *is* authenticated.
 
@@ -135,7 +139,8 @@ export const authenticate: Middleware = middlewareGuard(async (ctx, next) => {
     return ctx.throw(403, "JWT token is valid but the user isn't registered to the Agamim Portal.")
   }
 
-  ctx.user = user;
+  /** @todo make userController typed properly */
+  ctx.state.user = user as User;
 
   await next();
 })

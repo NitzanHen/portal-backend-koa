@@ -15,7 +15,6 @@ const router = new Router({
 });
 
 router.get('/',
-  validate(ObjectIdSchema.optional(), ['query', 'userId']),
   middlewareGuard(async ctx => {
     const { userId } = ctx.query;
 

@@ -31,11 +31,11 @@ router.get('/:_id',
       return;
     }
 
-    ctx.params._id = result.data;
+    ctx.state._id = result.data;
     await next()
   }),
   middlewareGuard(async ctx => {
-    const { _id } = ctx.params;
+    const { _id } = ctx.state;
 
     const user = await userCollection.findOne({ _id });
     if (!user) {
