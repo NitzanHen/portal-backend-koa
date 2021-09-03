@@ -126,11 +126,13 @@ export const authenticate: Middleware = middlewareGuard(async (ctx, next) => {
   }
 
   // All checks passed. Fetch a user and attach it to ctx.
+  // Note that from this point, we don't return 401 on an error - the user *is* authenticated.
+
   /** @todo cache this */
   const user = await userController.findOne({ oid });
   if (!user) {
     // JWT token is valid, but the user is not registered in the portal's databases.
-    return ctx.throw(401, "JWT token is valid but the user isn't registered to the Agamim Portal.")
+    return ctx.throw(403, "JWT token is valid but the user isn't registered to the Agamim Portal.")
   }
 
   ctx.user = user;
