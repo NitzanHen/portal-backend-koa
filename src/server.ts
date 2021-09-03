@@ -5,6 +5,12 @@ import bodyParser from 'koa-bodyparser';
 
 const app = new Koa();
 
+app.use(async (ctx, next) => {
+  if (ctx.path.startsWith('/image')) {
+    ctx.disableBodyParser = true;
+  }
+  await next();
+})
 app.use(bodyParser())
 
 loadControllers(app);

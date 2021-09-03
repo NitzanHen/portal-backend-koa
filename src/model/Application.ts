@@ -10,7 +10,7 @@ export const ApplicationSchema = z.object({
   tags: z.array(z.string()).default(() => []),
   categories: z.array(z.string()).default(() => []),
   groups: z.array(ObjectIdSchema).default(() => []),
-  image: z.string(), //todo
+  image: z.string(),
   responsive: z.boolean()
 });
 

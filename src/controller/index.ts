@@ -3,6 +3,7 @@ import userController from './user.js';
 import groupController from './group.js';
 import appController from './application.js';
 import notificationController from './notification.js';
+import imageController from './image.js';
 
 const loadControllers = (app: Koa) => {
   app.use(userController.routes());
@@ -16,6 +17,9 @@ const loadControllers = (app: Koa) => {
 
   app.use(notificationController.routes());
   app.use(notificationController.allowedMethods());
+
+  app.use(imageController.routes());
+  app.use(imageController.allowedMethods());
 }
 
 export default loadControllers;
