@@ -85,7 +85,7 @@ async function migrateUsers(indb, outdb) {
       }
     }, {
       $project: {
-        adId: 1,
+        oid: "$adId",
         firstName: '$name',
         lastName: '$surname',
         displayName: 1,
