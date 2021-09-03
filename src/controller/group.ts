@@ -1,5 +1,6 @@
 import Router from '@koa/router';
 import { err, ok } from '../common/Result.js';
+import { adminsOnly } from '../middleware/adminsOnly.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
 import { GroupSchema, GroupWithIdSchema } from '../model/Group.js';
@@ -43,6 +44,7 @@ router.get('/:id',
 );
 
 router.post('/',
+  adminsOnly,
   validate(GroupSchema, ['request', 'body']),
   middlewareGuard(async ctx => {
     const group = ctx.request.body;
@@ -56,6 +58,7 @@ router.post('/',
 const PartialGroupWithIdSchema = GroupWithIdSchema.partial();
 
 router.patch('/',
+  adminsOnly,
   validate(PartialGroupWithIdSchema, ['request', 'body']),
   middlewareGuard(async ctx => {
     const group = ctx.body;
@@ -79,6 +82,7 @@ router.patch('/',
 );
 
 router.delete('/',
+  adminsOnly,
   validate(ObjectIdSchema, ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
     const { _id } = ctx.body;
@@ -99,6 +103,7 @@ router.delete('/',
 
 
 router.get('/management',
+  adminsOnly,
   middlewareGuard(ctx => {
 
   }),

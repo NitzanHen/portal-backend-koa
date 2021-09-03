@@ -4,6 +4,7 @@ import { db } from '../peripheral/db.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
 import { UserSchema, UserWithIdSchema } from '../model/User.js';
+import { adminsOnly } from '../middleware/adminsOnly.js';
 
 const userCollection = db.collection('users');
 
@@ -11,12 +12,15 @@ const router = new Router({
   prefix: '/user'
 });
 
-router.get('/', middlewareGuard(async ctx => {
-  const users = await userCollection.find({}).toArray();
-  ctx.body = ok(users);
-}));
+router.get('/',
+  adminsOnly,
+  middlewareGuard(async ctx => {
+    const users = await userCollection.find({}).toArray();
+    ctx.body = ok(users);
+  }));
 
 router.get('/:_id',
+  adminsOnly,
   middlewareGuard(async (ctx, next) => {
     // Validate id
     const { _id } = ctx.params
@@ -45,6 +49,7 @@ router.get('/:_id',
 );
 
 router.post('/',
+  adminsOnly,
   middlewareGuard(async (ctx, next) => {
     // Validate request body
     const result = UserSchema.safeParse(ctx.request.body);
@@ -68,6 +73,7 @@ router.post('/',
 const PartialUserWithIdSchema = UserWithIdSchema.partial()
 
 router.patch('/',
+  adminsOnly,
   middlewareGuard(async (ctx, next) => {
     // Validate request body
     const result = PartialUserWithIdSchema.safeParse(ctx.request.body);
@@ -85,7 +91,7 @@ router.patch('/',
 
     const response = await userCollection.findOneAndUpdate(
       { _id: user._id },
-      { $set: user},
+      { $set: user },
       { returnDocument: 'after' }
     );
     if (!response.ok) {
@@ -100,6 +106,7 @@ router.patch('/',
   }));
 
 router.delete('/',
+  adminsOnly,
   middlewareGuard(async (ctx, next) => {
     const { _id } = ctx.request.body;
 
@@ -120,7 +127,7 @@ router.delete('/',
     if (!response.ok) {
       throw new Error('unknown error occured when attempting to delete the user');
     }
-    else if(!response.value) {
+    else if (!response.value) {
       ctx.status = 400;
       ctx.body = err("No user exists with the given id");
       return;

@@ -1,5 +1,6 @@
 import Router from '@koa/router';
 import { err, ok } from '../common/Result.js';
+import { adminsOnly } from '../middleware/adminsOnly.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
 import { NotificationSchema, NotificationWithIdSchema } from '../model/Notification.js';
@@ -49,6 +50,7 @@ router.get('/:_id',
 );
 
 router.post('/',
+  adminsOnly,
   validate(NotificationSchema, ['request', 'body']),
   middlewareGuard(async ctx => {
     const notification = ctx.request.body;
@@ -62,6 +64,7 @@ router.post('/',
 const PartialNotificationWithIdSchema = NotificationWithIdSchema.partial();
 
 router.patch('/',
+  adminsOnly,
   validate(PartialNotificationWithIdSchema, ['request', 'body']),
   middlewareGuard(async ctx => {
     const notification = ctx.request.body;
@@ -85,6 +88,7 @@ router.patch('/',
 )
 
 router.delete('/',
+  adminsOnly,
   validate(ObjectIdSchema, ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
     const { _id } = ctx.request.body

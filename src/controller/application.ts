@@ -1,5 +1,6 @@
 import Router from '@koa/router';
 import { err, ok } from '../common/Result.js';
+import { adminsOnly } from '../middleware/adminsOnly.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
 import { ApplicationSchema, ApplicationWithIdSchema } from '../model/Application.js';
@@ -24,7 +25,7 @@ router.get('/:_id',
     const { _id } = ctx.params;
 
     const app = await appCollection.findOne({ _id });
-    if(!app) {
+    if (!app) {
       ctx.status = 400;
       ctx.body = err('No app exists with the given id');
     }
@@ -34,11 +35,12 @@ router.get('/:_id',
 );
 
 router.get('/title-available/:title',
+  adminsOnly,
   validate(ObjectIdSchema, ['params', 'title']),
   middlewareGuard(async ctx => {
     const { title } = ctx.params;
 
-    const app = await appCollection.findOne({ title }, { projection: { _id: 1 }});
+    const app = await appCollection.findOne({ title }, { projection: { _id: 1 } });
 
     // If an app with the title is found, return false, else return true.
     return ok(!app)
@@ -46,12 +48,13 @@ router.get('/title-available/:title',
 )
 
 router.post('/',
+  adminsOnly,
   validate(ApplicationSchema, ['request', 'body']),
   middlewareGuard(async ctx => {
     const app = ctx.request.body;
 
     const response = await appCollection.insertOne(app);
-    
+
     ctx.body = ok({ _id: response.insertedId, ...app });
   })
 )
@@ -59,6 +62,7 @@ router.post('/',
 const PartialApplicationWithIdSchema = ApplicationWithIdSchema.partial();
 
 router.patch('/',
+  adminsOnly,
   validate(PartialApplicationWithIdSchema, ['request', 'body']),
   middlewareGuard(async ctx => {
     const application = ctx.request.body;
@@ -82,6 +86,7 @@ router.patch('/',
 )
 
 router.delete('/',
+  adminsOnly,
   validate(ObjectIdSchema, ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
     const { _id } = ctx.request.body
