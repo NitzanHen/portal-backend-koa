@@ -1,4 +1,4 @@
-import { Middleware } from 'koa';
+import { Middleware, ParameterizedContext } from 'koa';
 
 /**
  * A middleware that allows only admin users through.
@@ -6,11 +6,8 @@ import { Middleware } from 'koa';
  * This middleware must be placed after `authenticate`! 
  * Particularily, `ctx.user` must exist.
  */
-export const adminsOnly: Middleware = async (ctx, next) => {
-  if(!ctx.user?.admin) {
-    // Not an admin. Return 403.
-    return ctx.throw(403);
-  }
-
+export const adminsOnly: Middleware = async (ctx: ParameterizedContext, next) => {
+  ctx.assert(ctx.user?.admin, 403);
+  
   await next();
 }
