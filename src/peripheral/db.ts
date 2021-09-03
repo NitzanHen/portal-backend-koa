@@ -1,16 +1,8 @@
 import { MongoClient } from 'mongodb';
+import { getEnvVariableSafely } from '../common/getEnvVariableSafely.js';
 
-const dbConnectionString = process.env.DB_CONN_STR;
-const dbName = process.env.DB_NAME;
-
-if (!dbConnectionString) {
-  console.error('No connection string provided; make sure an env variable DB_CONN_STR exists with the correct connection string.')
-  process.exit(1);
-}
-if (!dbName) {
-  console.error('No database name provided; make sure an env variable DB_NAME exists with the correct db name.')
-  process.exit(1);
-}
+const dbConnectionString = getEnvVariableSafely('DB_CONN_STR');
+const dbName = getEnvVariableSafely('DB_NAME');
 
 const client = await new MongoClient(dbConnectionString).connect();
 console.log('Successfully connected to MongoDB');
