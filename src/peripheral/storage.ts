@@ -26,12 +26,18 @@ const blobServiceClient = new BlobServiceClient(
 
 
 const imageStorageClient = blobServiceClient.getContainerClient(imageContainerName!);
-await imageStorageClient.createIfNotExists();
+await imageStorageClient.createIfNotExists({
+  access: "blob"
+});
 
 export async function uploadImage(name: string, data: Buffer) {
   const blob = imageStorageClient.getBlockBlobClient(name);
 
-  await blob.upload(data, Buffer.byteLength(data));
+  await blob.upload(data, Buffer.byteLength(data), {
+    blobHTTPHeaders: {
+      blobContentType: 'image'
+    }
+  });
 
   return blob.url;
 }
