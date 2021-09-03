@@ -14,7 +14,36 @@ const router = new Router({
 });
 
 router.get('/', middlewareGuard(async ctx => {
-  const apps = await appCollection.find({}).toArray();
+  const { user } = ctx.state;
+
+  const apps = await appCollection.aggregate([
+    {
+      $match: {
+        groups: { $in: user.groups }
+      }
+    },
+    {
+    $lookup: {
+      from: 'categories',
+      localField: 'categories',
+      foreignField: '_id',
+      as: 'categories'
+    }
+  }, {
+    $lookup: {
+      from: 'tags',
+      localField: 'tags',
+      foreignField: '_id',
+      as: 'tags'
+    }
+  }, {
+    $lookup: {
+      from: 'groups',
+      localField: 'groups',
+      foreignField: '_id',
+      as: 'groups'
+    }
+  }]).toArray();
 
   ctx.body = ok(apps);
 }));
