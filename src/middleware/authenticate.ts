@@ -6,7 +6,7 @@ import { db } from '../peripheral/db.js';
 import { middlewareGuard } from './middlewareGuard.js';
 import { CtxState } from '../types/CtxState.js';
 import { User } from '../model/User.js';
-import { Cache } from '../common/cache.js';
+import { JwtCache } from '../common/JwtCache.js';
 
 const tokenEndpoint = getEnvVariableSafely('AZURE_AD_TOKEN_ENDPOINT');
 const clientId = getEnvVariableSafely('AZURE_CLIENT_ID');
@@ -20,7 +20,7 @@ type KidSignatureRecord = Record<string, string>;
 let kidSignatureRecord: KidSignatureRecord | null = null;
 let issuer: string | null = null;
 
-const jwtCache = new Cache<string, User>();
+const jwtCache = new JwtCache();
 
 /**
  * Retrieves Azure's public keys for decoding tokens, and the issuer url.
@@ -95,7 +95,7 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   const cachedUser = jwtCache.get(token);
   if(cachedUser) {
     ctx.state.user = cachedUser;
-    // jwtCache.setTTL(...)
+    jwtCache.refresh(token);
     return await next();
   }
 
@@ -155,10 +155,8 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     return ctx.throw(403, "JWT token is valid but the user isn't registered to the Agamim Portal.")
   }
 
-  const ttl = exp ? Math.min(exp - Date.now(), 1000 * 60 * 60) : 1000 * 60 * 60;
-
   /** @todo make userController typed properly */
-  jwtCache.set(token, user as User, ttl)
+  jwtCache.cache(token, user as User, exp);
   ctx.state.user = user as User;
 
   /** @todo make ttl refresh on request */
