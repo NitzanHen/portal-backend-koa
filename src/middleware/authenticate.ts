@@ -121,13 +121,18 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     return unauthorized();
   }
 
-  const { oid } = verifiedPayload;
+  const { oid, iat, exp } = verifiedPayload;
   if (!oid) {
     // This should not be possible
     throw new Error('Valid JWT token received that has no oid field');
   }
 
-  /** @todo check iat and exp fields */
+  if (iat && Date.now() <= iat) {
+    return unauthorized()
+  }
+  else if (exp && exp <= Date.now()) {
+    return unauthorized('Token expired')
+  }
 
   // All checks passed. Fetch a user and attach it to ctx.
   // Note that from this point, we don't return 401 on an error - the user *is* authenticated.
