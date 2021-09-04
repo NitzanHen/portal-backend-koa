@@ -6,6 +6,7 @@ import { db } from '../peripheral/db.js';
 import { middlewareGuard } from './middlewareGuard.js';
 import { CtxState } from '../types/CtxState.js';
 import { User } from '../model/User.js';
+import { Cache } from '../common/cache.js';
 
 const tokenEndpoint = getEnvVariableSafely('AZURE_AD_TOKEN_ENDPOINT');
 const clientId = getEnvVariableSafely('AZURE_CLIENT_ID');
@@ -18,6 +19,8 @@ type KidSignatureRecord = Record<string, string>;
 
 let kidSignatureRecord: KidSignatureRecord | null = null;
 let issuer: string | null = null;
+
+const jwtCache = new Cache<string, User>();
 
 /**
  * Retrieves Azure's public keys for decoding tokens, and the issuer url.
@@ -87,6 +90,15 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   }
 
   const token = matches[1];
+
+  //Check the cache for an existing token
+  const cachedUser = jwtCache.get(token);
+  if(cachedUser) {
+    ctx.state.user = cachedUser;
+    // jwtCache.setTTL(...)
+    return await next();
+  }
+
   const jwtPayload = jwt.decode(token, {
     complete: true
   });
@@ -137,15 +149,19 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   // All checks passed. Fetch a user and attach it to ctx.
   // Note that from this point, we don't return 401 on an error - the user *is* authenticated.
 
-  /** @todo cache this */
   const user = await userController.findOne({ oid });
   if (!user) {
     // JWT token is valid, but the user is not registered in the portal's databases.
     return ctx.throw(403, "JWT token is valid but the user isn't registered to the Agamim Portal.")
   }
 
+  const ttl = exp ? Math.min(exp - Date.now(), 1000 * 60 * 60) : 1000 * 60 * 60;
+
   /** @todo make userController typed properly */
+  jwtCache.set(token, user as User, ttl)
   ctx.state.user = user as User;
+
+  /** @todo make ttl refresh on request */
 
   await next();
 })
