@@ -3,10 +3,12 @@ import Koa from 'koa';
 import loadControllers from './controller/index.js';
 import bodyParser from 'koa-bodyparser';
 import { authenticate } from './middleware/authenticate.js';
-import { User } from './model/User.js';
 import { CtxState } from './types/CtxState.js';
+import cors from '@koa/cors';
 
 const app = new Koa<CtxState>();
+
+app.use(cors());
 
 app.use(authenticate);
 
