@@ -17,7 +17,7 @@ router.get('/',
   middlewareGuard(async ctx => {
     const { user } = ctx.state
 
-    const notifications = await notificationController.find({ $in: user.groups }).toArray();
+    const notifications = await notificationController.find({ groups: { $in: user.groups } }).toArray();
 
     ctx.body = ok(notifications);
   }));
