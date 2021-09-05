@@ -9,6 +9,9 @@ import { Middleware, ParameterizedContext } from 'koa';
  * @todo type this properly.
  */
 export const adminsOnly: Middleware = async (ctx: ParameterizedContext, next) => {
-  ctx.assert(ctx.user?.admin, 403);
+  if(!ctx.user?.admin) {
+    ctx.status = 403;
+    return;
+  }
   await next();
 }
