@@ -30,7 +30,7 @@ const jwtCache = new JwtCache();
 const loadPublicKeys = async (): Promise<[KidSignatureRecord, string]> => {
   const oidConfiguration = (await axios.get(tokenEndpoint)).data;
 
-  const issuerUrl = (oidConfiguration.issuer as string).replace('{tenantid}', tenantId);
+  const issuerUrl = oidConfiguration.issuer;
 
   const jwksUri = oidConfiguration['jwks_uri'];
   const keyRecord = (await axios.get(jwksUri)).data;
