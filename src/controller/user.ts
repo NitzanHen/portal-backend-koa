@@ -17,7 +17,14 @@ router.get('/',
   middlewareGuard(async ctx => {
     const users = await userCollection.find({}).toArray();
     ctx.body = ok(users);
-  }));
+  })
+);
+
+router.get('/me',
+  middlewareGuard(async ctx => {
+    ctx.body = ok(ctx.state.user)
+  })
+);
 
 router.get('/:_id',
   adminsOnly,
