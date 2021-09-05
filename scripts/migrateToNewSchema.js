@@ -3,18 +3,29 @@
 import { MongoClient } from 'mongodb';
 import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-blob'
 import chalk from 'chalk';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 const { grey, green } = chalk;
+
+const argv = yargs(hideBin(process.argv))
+  .options({
+    indbConn: { type: 'string', demandOption: true },
+    indbName: { type: 'string', demandOption: true },
+    outdbConn: { type: 'string', demandOption: true },
+    outdbName: { type: 'string', demandOption: true },
+    storageAccount: { type: 'string', demandOption: true },
+    storageAccountKey: { type: 'string', demandOption: true },
+    imageContainerName: { type: 'string', demandOption: true },
+  }).parseSync()
+
+const { indbConn, indbName, outdbConn, outdbName, storageAccount, storageAccountKey, imageContainerName } = argv;
 
 // Init mongo clients
 
-const inputClient = new MongoClient('***REMOVED***');
-const outputClient = new MongoClient('mongodb://host.docker.internal:27017');
+const inputClient = new MongoClient(indbConn);
+const outputClient = new MongoClient(outdbConn);
 
 // Init azure blob storage
-
-const storageAccount = 'agamimportalnext';
-const storageAccountKey = '***REMOVED***';
-const imageContainerName = 'images';
 
 const sharedKeyCredential = new StorageSharedKeyCredential(storageAccount, storageAccountKey);
 
@@ -50,19 +61,19 @@ async function main() {
   ]);
   console.log('Connected to MongoDB.');
 
-  const indb = inputClient.db('portalagamimdb');
-  const outdb = outputClient.db('portal-playground');
+  const indb = inputClient.db(indbName);
+  const outdb = outputClient.db(outdbName);
 
   //await imageStorageClient.deleteIfExists();
   await imageStorageClient.createIfNotExists({
     access: "blob"
   });
 
-  //await migrateUsers(indb, outdb);
-  //await migrateApps(indb, outdb);
-  //await migrateGroups(indb, outdb);
-  // await migrateCategories(indb, outdb);
-  // await migrateTags(indb, outdb);
+  await migrateUsers(indb, outdb);
+  await migrateApps(indb, outdb);
+  await migrateGroups(indb, outdb);
+  await migrateCategories(indb, outdb);
+  await migrateTags(indb, outdb);
 
   process.exit(0);
 }
@@ -209,7 +220,7 @@ async function migrateGroups(indb, outdb) {
  * @param {import("mongodb").Db} indb 
  * @param {import("mongodb").Db} outdb
  */
- async function migrateCategories(indb, outdb) {
+async function migrateCategories(indb, outdb) {
   const inCategories = indb.collection('categories');
   const outCategories = outdb.collection('categories');
 
@@ -233,7 +244,7 @@ async function migrateGroups(indb, outdb) {
  * @param {import("mongodb").Db} indb 
  * @param {import("mongodb").Db} outdb
  */
- async function migrateTags(indb, outdb) {
+async function migrateTags(indb, outdb) {
   const inTags = indb.collection('tags');
   const outTags = outdb.collection('tags');
 
