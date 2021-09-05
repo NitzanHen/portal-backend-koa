@@ -18,10 +18,14 @@ router.get('/',
   middlewareGuard(async ctx => {
     const { user } = ctx.state;
 
-    const groups = await groupCollection.find({ $in: user.groups }).toArray();
+    const groups = await groupCollection.find({ groups: { $in: user.groups } }).toArray();
 
     ctx.body = ok(groups);
   })
+);
+
+router.get('/management',
+  adminsOnly
 );
 
 router.get('/:id',
@@ -94,17 +98,6 @@ router.delete('/',
     }
 
     ctx.body = ok(response.value);
-  })
-);
-
-
-router.get('/management',
-  adminsOnly,
-  middlewareGuard(ctx => {
-
-  }),
-  middlewareGuard(ctx => {
-
   })
 );
 
