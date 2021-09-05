@@ -10,7 +10,7 @@ import { db } from '../peripheral/db.js';
 const categoryCollection = db.collection('categories');
 
 const router = new Router({
-  prefix: '/categories'
+  prefix: '/category'
 });
 
 router.get('/',
