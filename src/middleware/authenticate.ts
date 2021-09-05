@@ -115,8 +115,6 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     return unauthorized('Bad token');
   }
 
-  console.log('!!')
-
   const { kid } = jwtPayload.header;
   if (!kid) {
     return unauthorized();
@@ -128,8 +126,6 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     return unauthorized();
   }
 
-  console.log('@@')
-
   const verifyResult = safeTry(() => jwt.verify(token, signature, {
     issuer: issuer!,
     audience: clientId,
@@ -137,7 +133,7 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   }) as jwt.JwtPayload | null);
 
   if (!verifyResult.ok) {
-    console.error(verifyResult.err);
+    // console.error(verifyResult.err);
     return unauthorized();
   }
 
