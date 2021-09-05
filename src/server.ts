@@ -8,9 +8,7 @@ import cors from '@koa/cors';
 
 const app = new Koa<CtxState>();
 
-app.use(cors({
-  allowMethods: "GET,HEAD,PUT,POST,DELETE,PATCH"
-}));
+app.use(cors());
 
 app.use(authenticate);
 
