@@ -7,6 +7,8 @@ import { middlewareGuard } from './middlewareGuard.js';
 import { CtxState } from '../types/CtxState.js';
 import { User } from '../model/User.js';
 import { JwtCache } from '../common/JwtCache.js';
+import { err } from '../common/Result.js';
+import { safeTry } from '../common/safeTry.js';
 
 const tokenEndpoint = getEnvVariableSafely('AZURE_AD_TOKEN_ENDPOINT');
 const clientId = getEnvVariableSafely('AZURE_CLIENT_ID');
@@ -30,7 +32,7 @@ const jwtCache = new JwtCache();
 const loadPublicKeys = async (): Promise<[KidSignatureRecord, string]> => {
   const oidConfiguration = (await axios.get(tokenEndpoint)).data;
 
-  const issuerUrl = oidConfiguration.issuer;
+  const issuerUrl = (oidConfiguration.issuer as string).replace('{tenantid}', tenantId);
 
   const jwksUri = oidConfiguration['jwks_uri'];
   const keyRecord = (await axios.get(jwksUri)).data;
@@ -69,13 +71,19 @@ const bearerRegex = /^Bearer ([A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/
 export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, next) => {
   if (!kidSignatureRecord) {
     console.error('kid signature record is not loaded; cannot authenticate requests');
-    return ctx.throw(500);
+    ctx.status = 500;
+    ctx.body = err('Internal Server Error')
+    return
   }
 
   /** Helper function to return 401 properly if one of the checks fails. */
   const unauthorized = (message?: string) => {
     ctx.headers['www-authenticate'] = 'Bearer';
-    return message ? ctx.throw(401, message) : ctx.throw(401);
+    ctx.status = 401;
+    if (message) {
+      ctx.body = err(message);
+    }
+    return;
   }
 
 
@@ -93,7 +101,7 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
 
   //Check the cache for an existing token
   const cachedUser = jwtCache.get(token);
-  if(cachedUser) {
+  if (cachedUser) {
     ctx.state.user = cachedUser;
     jwtCache.refresh(token);
     return await next();
@@ -107,6 +115,8 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     return unauthorized('Bad token');
   }
 
+  console.log('!!')
+
   const { kid } = jwtPayload.header;
   if (!kid) {
     return unauthorized();
@@ -118,32 +128,28 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     return unauthorized();
   }
 
-  const verifiedPayload = jwt.verify(token, signature) as jwt.JwtPayload | null;
-  if (!verifiedPayload) {
-    // The JWT's signature is incorrect.
-    return unauthorized();
-  }
-  else if (verifiedPayload.iss !== issuer) {
-    // The JWT's issuer incorrect, i.e. it was not issued by our tenant in Azure.
-    return unauthorized();
-  }
-  else if (verifiedPayload.aud !== clientId) {
-    // The JWT's audience is incorrect, i.e. it was issued by our tenant in Azure, but not for this app.
-    ctx.header['www-authenticate'] = 'Bearer'
+  console.log('@@')
+
+  const verifyResult = safeTry(() => jwt.verify(token, signature, {
+    issuer: issuer!,
+    audience: clientId,
+    // Also validates nbf and exp
+  }) as jwt.JwtPayload | null);
+
+  if (!verifyResult.ok) {
+    console.error(verifyResult.err);
     return unauthorized();
   }
 
-  const { oid, iat, exp } = verifiedPayload;
+  const verifiedPayload = verifyResult.data;
+  if (!verifiedPayload) {
+    return unauthorized();
+  }
+
+  const { oid, exp } = verifiedPayload;
   if (!oid) {
     // This should not be possible
     throw new Error('Valid JWT token received that has no oid field');
-  }
-
-  if (iat && Date.now() <= iat) {
-    return unauthorized()
-  }
-  else if (exp && exp <= Date.now()) {
-    return unauthorized('Token expired')
   }
 
   // All checks passed. Fetch a user and attach it to ctx.
@@ -152,14 +158,13 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   const user = await userController.findOne({ oid });
   if (!user) {
     // JWT token is valid, but the user is not registered in the portal's databases.
-    return ctx.throw(403, "JWT token is valid but the user isn't registered to the Agamim Portal.")
+    ctx.status = 403;
+    ctx.body = err("JWT token is valid but the user isn't registered to the Agamim Portal.")
   }
 
   /** @todo make userController typed properly */
   jwtCache.cache(token, user as User, exp);
   ctx.state.user = user as User;
-
-  /** @todo make ttl refresh on request */
 
   await next();
 })

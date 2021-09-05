@@ -4,6 +4,8 @@ import groupController from './group.js';
 import appController from './application.js';
 import notificationController from './notification.js';
 import imageController from './image.js';
+import categoryController from './category.js';
+import tagController from './tag.js';
 
 const loadControllers = (app: Koa) => {
   app.use(userController.routes());
@@ -20,6 +22,12 @@ const loadControllers = (app: Koa) => {
 
   app.use(imageController.routes());
   app.use(imageController.allowedMethods());
+
+  app.use(categoryController.routes());
+  app.use(categoryController.allowedMethods());
+
+  app.use(tagController.routes());
+  app.use(tagController.allowedMethods());
 }
 
 export default loadControllers;
