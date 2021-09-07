@@ -5,8 +5,11 @@ import bodyParser from 'koa-bodyparser';
 import { authenticate } from './middleware/authenticate.js';
 import { CtxState } from './types/CtxState.js';
 import cors from '@koa/cors';
+import { logger } from './middleware/logger.js';
 
 const app = new Koa<CtxState>();
+
+app.use(logger)
 
 app.use(cors());
 
