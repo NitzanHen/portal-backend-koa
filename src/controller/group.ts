@@ -25,7 +25,46 @@ router.get('/',
 );
 
 router.get('/management',
-  adminsOnly
+  adminsOnly,
+  middlewareGuard(async ctx => {
+    const groups = await groupCollection.aggregate([{
+      $lookup: {
+        from: 'applications',
+        localField: '_id',
+        foreignField: 'groups',
+        as: 'applications'
+      }
+    }, {
+      $set: {
+        applications: {
+          $map: {
+            input: "$applications",
+            as: "app",
+            in: { _id: "$$app._id", title: "$$app.title" }
+          }
+        }
+      }
+    }, {
+      $lookup: {
+        from: 'users',
+        localField: '_id',
+        foreignField: 'groups',
+        as: 'users'
+      }
+    }, {
+      $set: {
+        users: {
+          $map: {
+            input: "$users",
+            as: "user",
+            in: { _id: "$$user._id", displayName: "$$user.displayName" }
+          }
+        }
+      }
+    }]).toArray();
+
+    ctx.body = ok(groups)
+  })
 );
 
 router.get('/:id',
