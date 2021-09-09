@@ -156,6 +156,7 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     // JWT token is valid, but the user is not registered in the portal's databases.
     ctx.status = 403;
     ctx.body = err("JWT token is valid but the user isn't registered to the Agamim Portal.")
+    return;
   }
 
   /** @todo make userController typed properly */
