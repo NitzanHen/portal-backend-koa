@@ -1,7 +1,7 @@
 // @ts-check
 
 import { MongoClient } from 'mongodb';
-import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-blob'
+import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-blob';
 import chalk from 'chalk';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
@@ -16,7 +16,7 @@ const argv = yargs(hideBin(process.argv))
     storageAccount: { type: 'string', demandOption: true },
     storageAccountKey: { type: 'string', demandOption: true },
     imageContainerName: { type: 'string', demandOption: true },
-  }).parseSync()
+  }).parseSync();
 
 const { indbConn, indbName, outdbConn, outdbName, storageAccount, storageAccountKey, imageContainerName } = argv;
 
@@ -32,7 +32,7 @@ const sharedKeyCredential = new StorageSharedKeyCredential(storageAccount, stora
 const blobServiceClient = new BlobServiceClient(
   `https://${storageAccount}.blob.core.windows.net`,
   sharedKeyCredential
-)
+);
 
 const imageStorageClient = blobServiceClient.getContainerClient(imageContainerName);
 
@@ -45,7 +45,7 @@ async function uploadImage(name, data) {
 
   await blob.upload(data, Buffer.byteLength(data), {
     blobHTTPHeaders: {
-      blobContentType: "image"
+      blobContentType: 'image'
     }
   });
 
@@ -66,7 +66,7 @@ async function main() {
 
   //await imageStorageClient.deleteIfExists();
   await imageStorageClient.createIfNotExists({
-    access: "blob"
+    access: 'blob'
   });
 
   await migrateUsers(indb, outdb);
@@ -96,7 +96,7 @@ async function migrateUsers(indb, outdb) {
       }
     }, {
       $project: {
-        oid: "$adId",
+        oid: '$adId',
         firstName: '$name',
         lastName: '$surname',
         displayName: 1,
@@ -117,10 +117,10 @@ async function migrateUsers(indb, outdb) {
   console.log(`Aggregated ${newUsers.length} users to new format. Clearing output collection...`);
 
   await outUsers.deleteMany({});
-  console.log(`Clearing successful. Inserting new users into the collection...`);
+  console.log('Clearing successful. Inserting new users into the collection...');
 
   await outUsers.insertMany(newUsers);
-  console.log(`Insertion successful.`);
+  console.log('Insertion successful.');
 }
 
 /**
@@ -145,7 +145,7 @@ async function migrateApps(indb, outdb) {
         responsive: 1,
         image: '$image.data'
       },
-    }
+    },
   ]).toArray();
 
   console.log(`Read ${applications.length} applications, including raw image data. uploading images...`);
@@ -161,6 +161,7 @@ async function migrateApps(indb, outdb) {
     const dataBuffer = Buffer.from(content, 'base64');
     return uploadImage(filename, dataBuffer)
       .then(imageUrl => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { image, ...appWithUrl } = app;
         appWithUrl.imageUrl = imageUrl;
 
@@ -180,9 +181,9 @@ async function migrateApps(indb, outdb) {
     else {
       failedUploads.push(result.reason);
     }
-  };
+  }
 
-  console.log(`Finished uploading images. ${newApps.length} images were uploaded successfully, ${failedUploads.length} failed.`)
+  console.log(`Finished uploading images. ${newApps.length} images were uploaded successfully, ${failedUploads.length} failed.`);
 
   const response = await outApplications.insertMany(newApps);
   console.log(`Inserted ${response.insertedCount} new applications into the out collection.`);
