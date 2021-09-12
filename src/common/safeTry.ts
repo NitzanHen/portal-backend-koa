@@ -11,4 +11,4 @@ export const safeTry = <T>(fn: () => T): Result<T, unknown> => {
   catch(e) {
     return err(e);
   }
-}
+};

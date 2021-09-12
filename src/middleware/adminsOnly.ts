@@ -12,4 +12,4 @@ export const adminsOnly: Middleware = async (ctx: ParameterizedContext, next) =>
     return;
   }
   await next();
-}
+};

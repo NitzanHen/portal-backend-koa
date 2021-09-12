@@ -7,4 +7,4 @@ const dbName = getEnvVariableSafely('DB_NAME');
 const client = await new MongoClient(dbConnectionString).connect();
 console.log('Successfully connected to MongoDB');
 
-export const db = client.db(dbName)
+export const db = client.db(dbName);

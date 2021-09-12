@@ -18,4 +18,4 @@ export const middlewareGuard = <StateT extends DefaultState & CtxState = Default
     ctx.status = 500;
     ctx.body = err('Internal Server error');
   }
-}
+};

@@ -72,9 +72,9 @@ router.get('/title-available/:title',
     const app = await appCollection.findOne({ title }, { projection: { _id: 1 } });
 
     // If an app with the title is found, return false, else return true.
-    return ok(!app)
+    return ok(!app);
   })
-)
+);
 
 router.post('/',
   adminsOnly,
@@ -86,7 +86,7 @@ router.post('/',
 
     ctx.body = ok({ _id: response.insertedId, ...app });
   })
-)
+);
 
 const PartialApplicationWithIdSchema = ApplicationWithIdSchema.partial();
 
@@ -107,18 +107,18 @@ router.patch('/',
     }
     else if (!response.value) {
       ctx.status = 400;
-      ctx.body = err("No app exists with the given id")
+      ctx.body = err('No app exists with the given id');
     }
 
-    ctx.body = ok(response.value)
+    ctx.body = ok(response.value);
   })
-)
+);
 
 router.delete('/',
   adminsOnly,
   validate(ObjectIdSchema, ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
-    const { _id } = ctx.request.body
+    const { _id } = ctx.request.body;
 
     const response = await appCollection.findOneAndDelete({ _id });
     if (!response.ok) {
@@ -126,12 +126,12 @@ router.delete('/',
     }
     else if (!response.value) {
       ctx.status = 400;
-      ctx.body = err("No app exists with the given id");
+      ctx.body = err('No app exists with the given id');
       return;
     }
 
     ctx.body = ok(response.value);
   })
-)
+);
 
 export default router;

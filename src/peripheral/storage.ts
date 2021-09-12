@@ -1,4 +1,4 @@
-import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-blob'
+import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-blob';
 import { getEnvVariableSafely } from '../common/getEnvVariableSafely.js';
 
 const storageAccount = getEnvVariableSafely('STORAGE_ACCOUNT_NAME');
@@ -14,11 +14,11 @@ const sharedKeyCredential = new StorageSharedKeyCredential(storageAccount, stora
 const blobServiceClient = new BlobServiceClient(
   `https://${storageAccount}.blob.core.windows.net`,
   sharedKeyCredential
-)
+);
 
 const imageStorageClient = blobServiceClient.getContainerClient(imageContainerName!);
 await imageStorageClient.createIfNotExists({
-  access: "blob"
+  access: 'blob'
 });
 
 export async function uploadImage(name: string, data: Buffer) {

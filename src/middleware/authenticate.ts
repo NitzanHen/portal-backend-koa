@@ -1,14 +1,14 @@
 import { Middleware } from 'koa';
-import jwt from 'jsonwebtoken';
+import { decode, JwtPayload, verify } from 'jsonwebtoken';
 import axios from 'axios';
 import { getEnvVariableSafely } from '../common/getEnvVariableSafely.js';
 import { db } from '../peripheral/db.js';
-import { middlewareGuard } from './middlewareGuard.js';
 import { CtxState } from '../types/CtxState.js';
 import { User } from '../model/User.js';
 import { JwtCache } from '../common/JwtCache.js';
 import { err } from '../common/Result.js';
 import { safeTry } from '../common/safeTry.js';
+import { middlewareGuard } from './middlewareGuard.js';
 
 const tokenEndpoint = getEnvVariableSafely('AZURE_AD_TOKEN_ENDPOINT');
 const clientId = getEnvVariableSafely('AZURE_CLIENT_ID');
@@ -45,23 +45,23 @@ const loadPublicKeys = async (): Promise<[KidSignatureRecord, string]> => {
   }), {});
 
 
-  return [kidSignatureRecord, issuerUrl]
-}
+  return [kidSignatureRecord, issuerUrl];
+};
 
 await loadPublicKeys().then(([record, iss]) => {
   kidSignatureRecord = record;
-  issuer = iss
-  console.log(`Azure AD public keys loaded`)
+  issuer = iss;
+  console.log('Azure AD public keys loaded');
 });
 
 /** Once a day, refresh the kid signature record */
 setInterval(() => loadPublicKeys().then(([record, iss]) => {
   kidSignatureRecord = record;
-  issuer = iss
-  console.log(`Azure AD public keys & issuer url refreshed`)
-}), 1000 * 60 * 60 * 24)
+  issuer = iss;
+  console.log('Azure AD public keys & issuer url refreshed');
+}), 1000 * 60 * 60 * 24);
 
-const bearerRegex = /^Bearer ([A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*)$/
+const bearerRegex = /^Bearer ([A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*)$/;
 
 
 /**
@@ -72,8 +72,8 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   if (!kidSignatureRecord) {
     console.error('kid signature record is not loaded; cannot authenticate requests');
     ctx.status = 500;
-    ctx.body = err('Internal Server Error')
-    return
+    ctx.body = err('Internal Server Error');
+    return;
   }
 
   /** Helper function to return 401 properly if one of the checks fails. */
@@ -84,7 +84,7 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
       ctx.body = err(message);
     }
     return;
-  }
+  };
 
 
   const { authorization } = ctx.header;
@@ -107,7 +107,7 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     return await next();
   }
 
-  const jwtPayload = jwt.decode(token, {
+  const jwtPayload = decode(token, {
     complete: true
   });
   if (!jwtPayload) {
@@ -126,11 +126,11 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     return unauthorized();
   }
 
-  const verifyResult = safeTry(() => jwt.verify(token, signature, {
+  const verifyResult = safeTry(() => verify(token, signature, {
     issuer: issuer!,
     audience: clientId,
     // Also validates nbf and exp
-  }) as jwt.JwtPayload | null);
+  }) as JwtPayload | null);
 
   if (!verifyResult.ok) {
     // console.error(verifyResult.err);
@@ -155,7 +155,7 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   if (!user) {
     // JWT token is valid, but the user is not registered in the portal's databases.
     ctx.status = 403;
-    ctx.body = err("JWT token is valid but the user isn't registered to the Agamim Portal.")
+    ctx.body = err("JWT token is valid but the user isn't registered to the Agamim Portal.");
     return;
   }
 
@@ -164,4 +164,4 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   ctx.state.user = user as User;
 
   await next();
-})
+});

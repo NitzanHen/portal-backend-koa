@@ -8,9 +8,9 @@
 export const getEnvVariableSafely = (key: string): string => {
   const variable = process.env[key];
   if(!variable) {
-    console.error(`Can't find the env variable ${key}. Make sure it exists and is valid.`)
+    console.error(`Can't find the env variable ${key}. Make sure it exists and is valid.`);
     process.exit(1);
   }
 
   return variable;
-}
+};

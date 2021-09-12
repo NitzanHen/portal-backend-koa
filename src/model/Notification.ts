@@ -12,10 +12,10 @@ export const NotificationSchema = z.object({
   expirationDate: DateStringSchema.optional()
 });
 
-export interface Notification extends z.infer<typeof NotificationSchema> {};
+export interface Notification extends z.infer<typeof NotificationSchema> {}
 
 export const NotificationWithIdSchema = NotificationSchema.extend({
   _id: ObjectIdSchema
 });
 
-export interface NotificationWithId extends z.infer<typeof NotificationWithIdSchema> {};
+export interface NotificationWithId extends z.infer<typeof NotificationWithIdSchema> {}

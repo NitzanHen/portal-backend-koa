@@ -32,7 +32,7 @@ router.get('/:id',
       ctx.body = err('No tag exists with the given id');
       return;
     }
-    ctx.body = ok(tag)
+    ctx.body = ok(tag);
   }),
 );
 
@@ -67,10 +67,10 @@ router.patch('/',
     }
     else if (!response.value) {
       ctx.status = 400;
-      ctx.body = err("No tag exists with the given id")
+      ctx.body = err('No tag exists with the given id');
     }
 
-    ctx.body = ok(response.value)
+    ctx.body = ok(response.value);
   })
 );
 
@@ -86,7 +86,7 @@ router.delete('/',
     }
     else if (!response.value) {
       ctx.status = 400;
-      ctx.body = err("No tag exists with the given id");
+      ctx.body = err('No tag exists with the given id');
       return;
     }
 

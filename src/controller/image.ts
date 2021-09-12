@@ -8,14 +8,14 @@ const router = new Router({
   prefix: '/image'
 });
 
-const upload = multer()
+const upload = multer();
 
 router.post('/', upload.single('image'),
   middlewareGuard(async ctx => {
     const { originalname, buffer } = ctx.file;
 
     const url = await uploadImage(originalname, buffer);
-    ctx.body = ok(url)
+    ctx.body = ok(url);
   })
 );
 

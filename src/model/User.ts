@@ -11,7 +11,7 @@ export const UserSchema = z.object({
   role: z.ostring(),
   groups: z.array(ObjectIdSchema).default(() => []),
   favorites: z.array(ObjectIdSchema).default(() => []),
-})
+});
 
 export interface User extends z.infer<typeof UserSchema> {}
 

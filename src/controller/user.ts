@@ -22,7 +22,7 @@ router.get('/',
 
 router.get('/me',
   middlewareGuard(async ctx => {
-    ctx.body = ok(ctx.state.user)
+    ctx.body = ok(ctx.state.user);
   })
 );
 
@@ -30,16 +30,16 @@ router.get('/:_id',
   adminsOnly,
   middlewareGuard(async (ctx, next) => {
     // Validate id
-    const { _id } = ctx.params
+    const { _id } = ctx.params;
     const result = ObjectIdSchema.safeParse(_id);
     if (!result.success) {
       ctx.status = 400;
-      ctx.body = err(result.error)
+      ctx.body = err(result.error);
       return;
     }
 
     ctx.state._id = result.data;
-    await next()
+    await next();
   }),
   middlewareGuard(async ctx => {
     const { _id } = ctx.state;
@@ -47,11 +47,11 @@ router.get('/:_id',
     const user = await userCollection.findOne({ _id });
     if (!user) {
       ctx.status = 400;
-      ctx.body = err('No user exists with the given id')
+      ctx.body = err('No user exists with the given id');
       return;
     }
 
-    ctx.body = ok(user)
+    ctx.body = ok(user);
   })
 );
 
@@ -62,22 +62,22 @@ router.post('/',
     const result = UserSchema.safeParse(ctx.request.body);
     if (!result.success) {
       ctx.status = 400;
-      ctx.body = err(result.error)
+      ctx.body = err(result.error);
       return;
     }
 
     ctx.request.body = result.data;
-    await next()
+    await next();
   }),
   middlewareGuard(async ctx => {
     const user = ctx.request.body;
 
     const response = await userCollection.insertOne(user);
 
-    ctx.body = ok({ _id: response.insertedId, ...user })
+    ctx.body = ok({ _id: response.insertedId, ...user });
   }));
 
-const PartialUserWithIdSchema = UserWithIdSchema.partial()
+const PartialUserWithIdSchema = UserWithIdSchema.partial();
 
 router.patch('/',
   adminsOnly,
@@ -86,12 +86,12 @@ router.patch('/',
     const result = PartialUserWithIdSchema.safeParse(ctx.request.body);
     if (!result.success) {
       ctx.status = 400;
-      ctx.body = err(result.error)
+      ctx.body = err(result.error);
       return;
     }
 
     ctx.request.body = result.data;
-    await next()
+    await next();
   }),
   middlewareGuard(async ctx => {
     const user = ctx.request.body;
@@ -106,10 +106,10 @@ router.patch('/',
     }
     else if (!response.value) {
       ctx.status = 400;
-      ctx.body = err("No user exists with the given id")
+      ctx.body = err('No user exists with the given id');
     }
 
-    ctx.body = ok(response.value)
+    ctx.body = ok(response.value);
   }));
 
 router.delete('/',
@@ -120,7 +120,7 @@ router.delete('/',
     const result = ObjectIdSchema.safeParse(_id);
     if (!result.success) {
       ctx.status = 400;
-      ctx.body = err(result.error)
+      ctx.body = err(result.error);
       return;
     }
 
@@ -136,11 +136,11 @@ router.delete('/',
     }
     else if (!response.value) {
       ctx.status = 400;
-      ctx.body = err("No user exists with the given id");
+      ctx.body = err('No user exists with the given id');
       return;
     }
 
-    ctx.body = ok(response.value)
+    ctx.body = ok(response.value);
   }),
 );
 

@@ -7,7 +7,7 @@ import { NotificationSchema, NotificationWithIdSchema } from '../model/Notificat
 import { ObjectIdSchema } from '../model/ObjectId.js';
 import { db } from '../peripheral/db.js';
 
-const notificationController = db.collection('notifications')
+const notificationController = db.collection('notifications');
 
 const router = new Router({
   prefix: '/notification'
@@ -15,7 +15,7 @@ const router = new Router({
 
 router.get('/',
   middlewareGuard(async ctx => {
-    const { user } = ctx.state
+    const { user } = ctx.state;
 
     const notifications = await notificationController.find({ groups: { $in: user.groups } }).toArray();
 
@@ -47,7 +47,7 @@ router.post('/',
 
     ctx.body = ok({ _id: response.insertedId, ...notification });
   })
-)
+);
 
 const PartialNotificationWithIdSchema = NotificationWithIdSchema.partial();
 
@@ -68,18 +68,18 @@ router.patch('/',
     }
     else if (!response.value) {
       ctx.status = 400;
-      ctx.body = err("No notification exists with the given id")
+      ctx.body = err('No notification exists with the given id');
     }
 
-    ctx.body = ok(response.value)
+    ctx.body = ok(response.value);
   })
-)
+);
 
 router.delete('/',
   adminsOnly,
   validate(ObjectIdSchema, ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
-    const { _id } = ctx.request.body
+    const { _id } = ctx.request.body;
 
     const response = await notificationController.findOneAndDelete({ _id });
     if (!response.ok) {
@@ -87,14 +87,14 @@ router.delete('/',
     }
     else if (!response.value) {
       ctx.status = 400;
-      ctx.body = err("No notification exists with the given id");
+      ctx.body = err('No notification exists with the given id');
       return;
     }
 
     ctx.body = ok(response.value);
   })
-)
+);
 
-router.post('/')
+router.post('/');
 
 export default router;

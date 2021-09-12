@@ -5,4 +5,4 @@ import { z } from 'zod';
  */
 export const DateStringSchema = z.string()
   .refine(str => !isNaN(new Date(str).getTime()), 'The string must represent a valid date')
-  .transform(str => new Date(str))
+  .transform(str => new Date(str));

@@ -38,9 +38,9 @@ router.get('/management',
       $set: {
         applications: {
           $map: {
-            input: "$applications",
-            as: "app",
-            in: { _id: "$$app._id", title: "$$app.title" }
+            input: '$applications',
+            as: 'app',
+            in: { _id: '$$app._id', title: '$$app.title' }
           }
         }
       }
@@ -55,15 +55,15 @@ router.get('/management',
       $set: {
         users: {
           $map: {
-            input: "$users",
-            as: "user",
-            in: { _id: "$$user._id", displayName: "$$user.displayName" }
+            input: '$users',
+            as: 'user',
+            in: { _id: '$$user._id', displayName: '$$user.displayName' }
           }
         }
       }
     }]).toArray();
 
-    ctx.body = ok(groups)
+    ctx.body = ok(groups);
   })
 );
 
@@ -78,7 +78,7 @@ router.get('/:id',
       ctx.body = err('No group exists with the given id');
       return;
     }
-    ctx.body = ok(group)
+    ctx.body = ok(group);
   }),
 );
 
@@ -113,10 +113,10 @@ router.patch('/',
     }
     else if (!response.value) {
       ctx.status = 400;
-      ctx.body = err("No group exists with the given id")
+      ctx.body = err('No group exists with the given id');
     }
 
-    ctx.body = ok(response.value)
+    ctx.body = ok(response.value);
   })
 );
 
@@ -132,7 +132,7 @@ router.delete('/',
     }
     else if (!response.value) {
       ctx.status = 400;
-      ctx.body = err("No group exists with the given id");
+      ctx.body = err('No group exists with the given id');
       return;
     }
 

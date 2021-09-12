@@ -28,6 +28,6 @@ const loadControllers = (app: Koa) => {
 
   app.use(tagController.routes());
   app.use(tagController.allowedMethods());
-}
+};
 
 export default loadControllers;
