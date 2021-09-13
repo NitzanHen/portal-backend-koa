@@ -5,6 +5,7 @@ import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
 import { UserSchema, UserWithIdSchema } from '../model/User.js';
 import { adminsOnly } from '../middleware/adminsOnly.js';
+import { validate } from '../middleware/validate.js';
 
 const userCollection = db.collection('users');
 
@@ -144,6 +145,24 @@ router.delete('/',
   }),
 );
 
-// router.post('/:id/favourite', ctx => {})
+router.post('/favourite',
+  validate(ObjectIdSchema, ['body']),
+  middlewareGuard(async ctx => {
+    const appId = ctx.body;
+    const { _id } = ctx.state.user;
+    const newUser = await userCollection.findOneAndUpdate({ _id }, { $addToSet: { favorites: appId } });
+
+    ctx.body = ok(newUser);
+  })
+);
+router.delete('/:id/favourite',
+  validate(ObjectIdSchema, ['body']),
+  middlewareGuard(async ctx => {
+    const appId = ctx.body;
+    const { _id } = ctx.state.user;
+    const newUser = await userCollection.findOneAndUpdate({ _id }, { $pull: { favorites: appId } });
+
+    ctx.body = ok(newUser);
+  }));
 
 export default router;
