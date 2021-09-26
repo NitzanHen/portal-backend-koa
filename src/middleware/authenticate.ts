@@ -1,5 +1,5 @@
 import { Middleware } from 'koa';
-import { decode, JwtPayload, verify } from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import axios from 'axios';
 import { getEnvVariableSafely } from '../common/getEnvVariableSafely.js';
 import { db } from '../peripheral/db.js';
@@ -107,7 +107,7 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     return await next();
   }
 
-  const jwtPayload = decode(token, {
+  const jwtPayload = jwt.decode(token, {
     complete: true
   });
   if (!jwtPayload) {
@@ -126,11 +126,11 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
     return unauthorized();
   }
 
-  const verifyResult = safeTry(() => verify(token, signature, {
+  const verifyResult = safeTry(() => jwt.verify(token, signature, {
     issuer: issuer!,
     audience: clientId,
     // Also validates nbf and exp
-  }) as JwtPayload | null);
+  }) as jwt.JwtPayload | null);
 
   if (!verifyResult.ok) {
     // console.error(verifyResult.err);
