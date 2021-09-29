@@ -1,5 +1,5 @@
 import { Middleware } from 'koa';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import { getEnvVariableSafely } from '../common/getEnvVariableSafely.js';
 import { db } from '../peripheral/db.js';
@@ -133,7 +133,7 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   }) as jwt.JwtPayload | null);
 
   if (!verifyResult.ok) {
-    // console.error(verifyResult.err);
+    console.log(verifyResult.err);
     return unauthorized();
   }
 
@@ -151,11 +151,13 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   // All checks passed. Fetch a user and attach it to ctx.
   // Note that from this point, we don't return 401 on an error - the user *is* authenticated.
 
+  console.log(await userController.find({}).toArray());
+
   const user = await userController.findOne({ oid });
   if (!user) {
     // JWT token is valid, but the user is not registered in the portal's databases.
     ctx.status = 403;
-    ctx.body = err("JWT token is valid but the user isn't registered to the Agamim Portal.");
+    ctx.body = "JWT token is valid but the user isn't registered to the Agamim Portal.";
     return;
   }
 
