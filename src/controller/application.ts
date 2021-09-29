@@ -1,136 +1,138 @@
 import Router from '@koa/router';
+import { ObjectId } from 'bson';
+import { z } from 'zod';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
 import { err, ok } from '../common/Result.js';
 import { adminsOnly } from '../middleware/adminsOnly.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
-import { ApplicationSchema, ApplicationWithIdSchema } from '../model/Application.js';
+import { Application, ApplicationSchema } from '../model/Application.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
-import { db } from '../peripheral/db.js';
+import { appService } from '../service/ApplicationService.js';
+import { CtxState } from '../types/CtxState.js';
 
-const appCollection = db.collection('applications');
 
-const router = new Router({
+const router = new Router<CtxState>({
   prefix: '/application'
 });
 
 router.get('/', middlewareGuard(async ctx => {
   const { user } = ctx.state;
 
-  const apps = await appCollection.aggregate([
-    {
-      $match: {
-        groups: { $in: user.groups }
-      }
-    },
-    {
-    $lookup: {
-      from: 'categories',
-      localField: 'categories',
-      foreignField: '_id',
-      as: 'categories'
-    }
-  }, {
-    $lookup: {
-      from: 'tags',
-      localField: 'tags',
-      foreignField: '_id',
-      as: 'tags'
-    }
-  }, {
-    $lookup: {
-      from: 'groups',
-      localField: 'groups',
-      foreignField: '_id',
-      as: 'groups'
-    }
-  }]).toArray();
+  const apps = await appService.findByGroups(user.groups);
 
   ctx.body = ok(apps);
 }));
 
-router.get('/:_id',
-  validate(ObjectIdSchema, ['params', '_id']),
+router.get<{ _id: ObjectId }>(
+  '/:_id',
+  validate(ObjectIdSchema, '_id', ['params', '_id']),
   middlewareGuard(async ctx => {
-    const { _id } = ctx.params;
+    const { _id } = ctx.state;
 
-    const app = await appCollection.findOne({ _id });
-    if (!app) {
-      ctx.status = 400;
-      ctx.body = err('No app exists with the given id');
+    const result = await appService.findById(_id);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      // Unexpected error.
+      throw error;
     }
 
-    ctx.body = ok(app);
+    ctx.body = ok(result.data);
   })
 );
 
-router.get('/title-available/:title',
+router.get<{ title: string }>(
+  '/title-available/:title',
   adminsOnly,
-  validate(ObjectIdSchema, ['params', 'title']),
+  validate(ApplicationSchema.shape.title, 'title', ['params', 'title']),
   middlewareGuard(async ctx => {
-    const { title } = ctx.params;
+    const { title } = ctx.state;
 
-    const app = await appCollection.findOne({ title }, { projection: { _id: 1 } });
+    const isAvailable = await appService.isTitleAvailable(title);
 
-    // If an app with the title is found, return false, else return true.
-    return ok(!app);
+    return ok(isAvailable);
   })
 );
 
-router.post('/',
+router.post<{ app: Application }>(
+  '/',
   adminsOnly,
-  validate(ApplicationSchema, ['request', 'body']),
+  validate(ApplicationSchema, 'app', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const app = ctx.request.body;
+    const { app } = ctx.state;
 
-    const response = await appCollection.insertOne(app);
+    const result = await appService.insert(app);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
 
-    ctx.body = ok({ _id: response.insertedId, ...app });
+      // Unexpected error.
+      throw error;
+    }
+
+    ctx.body = ok(result.data);
   })
 );
 
-const PartialApplicationWithIdSchema = ApplicationWithIdSchema.partial();
+const PartialApplicationWithIdSchema = ApplicationSchema.partial().extend({
+  _id: ObjectIdSchema
+});
+interface PartialApplicationWithId extends z.infer<typeof PartialApplicationWithIdSchema> { }
 
-router.patch('/',
+router.patch<{ patch: PartialApplicationWithId }>(
+  '/',
   adminsOnly,
-  validate(PartialApplicationWithIdSchema, ['request', 'body']),
+  validate(PartialApplicationWithIdSchema, 'patch', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const application = ctx.request.body;
+    const { patch } = ctx.state;
 
-    const response = await appCollection.findOneAndUpdate(
-      { _id: application._id },
-      { $set: application },
-      { returnDocument: 'after' }
-    );
+    const response = await appService.update(patch._id, patch);
 
     if (!response.ok) {
-      throw new Error('unknown error occured when attempting to update the app');
-    }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No app exists with the given id');
+      const { err: error } = response;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
     }
 
-    ctx.body = ok(response.value);
+    ctx.body = ok(response.data);
   })
 );
 
-router.delete('/',
+router.delete<{ _id: ObjectId }>(
+  '/',
   adminsOnly,
-  validate(ObjectIdSchema, ['request', 'body', '_id']),
+  validate(ObjectIdSchema, '_id', ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
-    const { _id } = ctx.request.body;
+    const { _id } = ctx.state;
 
-    const response = await appCollection.findOneAndDelete({ _id });
+    const response = await appService.delete(_id);
     if (!response.ok) {
-      throw new Error('Unknown error occured while attempting to delete an app');
-    }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No app exists with the given id');
-      return;
+      const { err: error } = response;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
     }
 
-    ctx.body = ok(response.value);
+    ctx.body = ok(response.data);
   })
 );
 

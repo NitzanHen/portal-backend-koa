@@ -1,38 +1,22 @@
 import { Middleware } from 'koa';
-import { reduce } from 'rhax';
-import { Schema } from 'zod';
-import { err } from '../common/Result.js';
+import { Schema, ZodTypeDef } from 'zod';
 
-const get = (o: any, path: string[]) => reduce(
-  (acc, key) => acc[key],
-  o,
-  path
-);
+const get = (o: any, path: string[]): unknown => path.reduce((acc, key) => acc[key], o);
 
-const set = (o: any, path: string[], value: any) => {
-  let pos = o;
-  for(let i = 0; i < path.length - 1; i++) {
-    const key = path[i];
-    if(!pos[key]) {
-      pos[key] = {};
-    }
-    pos = pos[key];
+export const validate = <T, OutName extends string>(
+  schema: Schema<T, ZodTypeDef, any>,
+  outname: OutName,
+  path: string[]
+): Middleware<Record<OutName, T>> => async (ctx, next) => {
+  const value = get(ctx, path);
+
+  const result = schema.safeParse(value);
+  if (!result.success) {
+    ctx.status = 400;
+    ctx.body = result.error;
+    return;
   }
 
-  pos[path[path.length - 1]] = value;
-
-  return o;
+  ctx.state[outname] = result.data;
+  await next();
 };
-
-export const validate = (schema: Schema<any>, path: string[]): Middleware => async (ctx, next) => {
-    const value = get(ctx, path);
-    const result = schema.safeParse(value);
-    if (!result.success) {
-      ctx.status = 400;
-      ctx.body = err(result.error);
-      return;
-    }
-
-    set(ctx, path, result.data);
-    await next();
-  };

@@ -312,17 +312,10 @@
   dependencies:
     "@types/koa" "*"
 
-"@types/koa__multer@^2.0.3":
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/@types/koa__multer/-/koa__multer-2.0.3.tgz#8ad84281eaee82717c2b26cbb10b13b0c83cc536"
-  integrity sha512-nxVUQIBYxjLSDScxe2YlHL8uJpuPtElEK15Q7D51hD6TwfFKe+7Ji/8Q8ewwzUlFWiuOnFbuXdy/HIjgQiTSHA==
-  dependencies:
-    "@types/koa" "*"
-
-"@types/koa__router@^8.0.7":
-  version "8.0.7"
-  resolved "https://registry.yarnpkg.com/@types/koa__router/-/koa__router-8.0.7.tgz#663d69d5ddebff5aaca27c0594430b3ba6ea20be"
-  integrity sha512-OB3Ax75nmTP+WR9AgdzA42DI7YmBtiNKN2g1Wxl+d5Dyek9SWt740t+ukwXSmv/jMBCUPyV3YEI93vZHgdP7UQ==
+"@types/koa__router@^8.0.8":
+  version "8.0.8"
+  resolved "https://registry.yarnpkg.com/@types/koa__router/-/koa__router-8.0.8.tgz#b1e0e9a512498777d3366bbdf0e853df27ec831c"
+  integrity sha512-9pGCaDtzCsj4HJ8HmGuqzk8+s57sPj4njWd08GG5o92n5Xp9io2snc40CPpXFhoKcZ8OKhuu6ht4gNou9e1C2w==
   dependencies:
     "@types/koa" "*"
 

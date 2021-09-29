@@ -1,6 +1,6 @@
 import type { Middleware, ParameterizedContext } from 'koa';
 import { DefaultState, DefaultContext } from 'koa';
-import { err, Result } from '../common/Result.js';
+import { Result } from '../common/Result.js';
 import { CtxState } from '../types/CtxState.js';
 
 /**
@@ -16,6 +16,5 @@ export const middlewareGuard = <StateT extends DefaultState & CtxState = Default
     console.error(e);
 
     ctx.status = 500;
-    ctx.body = err('Internal Server error');
   }
 };

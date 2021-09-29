@@ -1,96 +1,120 @@
 import Router from '@koa/router';
+import { ObjectId } from 'bson';
+import { z } from 'zod';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
 import { err, ok } from '../common/Result.js';
 import { adminsOnly } from '../middleware/adminsOnly.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
-import { CategorySchema, CategoryWithIdSchema } from '../model/Category.js';
+import { Category, CategorySchema, CategoryWithIdSchema } from '../model/Category.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
-import { db } from '../peripheral/db.js';
+import { categoryService } from '../service/CategoryService.js';
+import { CtxState } from '../types/CtxState.js';
 
-const categoryCollection = db.collection('categories');
-
-const router = new Router({
+const router = new Router<CtxState>({
   prefix: '/category'
 });
 
 router.get('/',
   middlewareGuard(async ctx => {
-    const categories = await categoryCollection.find({}).toArray();
+    const categories = await categoryService.findAll();
 
     ctx.body = ok(categories);
   })
 );
 
-router.get('/:id',
-  validate(ObjectIdSchema, ['params', 'id']),
+router.get<{ _id: ObjectId }>(
+  '/:_id',
+  validate(ObjectIdSchema, '_id', ['params', 'id']),
   middlewareGuard(async ctx => {
-    const { id } = ctx.params;
-    const categories = await categoryCollection.findOne({ _id: id });
+    const { _id } = ctx.state;
 
-    if (!categories) {
-      ctx.status = 400;
-      ctx.body = err('No category exists with the given id');
-      return;
+    const result = await categoryService.findById(_id);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
     }
-    ctx.body = ok(categories);
+    ctx.body = ok(result.data);
   }),
 );
 
-router.post('/',
+router.post<{ category: Category }>(
+  '/',
   adminsOnly,
-  validate(CategorySchema, ['request', 'body']),
+  validate(CategorySchema, 'category', ['request', 'body']),
   middlewareGuard(async ctx => {
     const category = ctx.request.body;
 
-    const response = await categoryCollection.insertOne(category);
+    const result = await categoryService.insert(category);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
 
-    ctx.body = ok({ _id: response.insertedId, ...category });
+      throw error;
+    }
+    ctx.body = ok(result.data);
   })
 );
 
-const PartialCategoryWithIdSchema = CategoryWithIdSchema.partial();
+const PartialCategoryWithIdSchema = CategoryWithIdSchema.partial().extend({
+  _id: ObjectIdSchema
+});
+interface PartialCategoryWithId extends z.infer<typeof PartialCategoryWithIdSchema> { }
 
-router.patch('/',
+router.patch<{ patch: PartialCategoryWithId }>(
+  '/',
   adminsOnly,
-  validate(PartialCategoryWithIdSchema, ['request', 'body']),
+  validate(PartialCategoryWithIdSchema, 'patch', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const category = ctx.body;
+    const { patch } = ctx.state;
 
-    const response = await categoryCollection.findOneAndUpdate(
-      { _id: category._id },
-      { $set: category },
-      { returnDocument: 'after' }
-    );
+    const result = await categoryService.update(patch._id, patch);
 
-    if (!response.ok) {
-      throw new Error('unknown error occured when attempting to update the category');
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
     }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No category exists with the given id');
-    }
 
-    ctx.body = ok(response.value);
+    ctx.body = ok(result.data);
   })
 );
 
-router.delete('/',
+router.delete<{ _id: ObjectId }>('/',
   adminsOnly,
-  validate(ObjectIdSchema, ['request', 'body', '_id']),
+  validate(ObjectIdSchema, '_id', ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
     const { _id } = ctx.body;
 
-    const response = await categoryCollection.findOneAndDelete({ _id });
-    if (!response.ok) {
-      throw new Error('Unknown error occured while attempting to delete a category');
-    }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No category exists with the given id');
-      return;
+    const result = await categoryService.delete(_id);
+
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
     }
 
-    ctx.body = ok(response.value);
+    ctx.body = ok(result.data);
   })
 );
 

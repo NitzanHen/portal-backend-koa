@@ -17,11 +17,13 @@ const blobServiceClient = new BlobServiceClient(
 );
 
 const imageStorageClient = blobServiceClient.getContainerClient(imageContainerName!);
-await imageStorageClient.createIfNotExists({
+const containerPromise = imageStorageClient.createIfNotExists({
   access: 'blob'
 });
 
 export async function uploadImage(name: string, data: Buffer) {
+  await containerPromise;
+
   const blob = imageStorageClient.getBlockBlobClient(name);
 
   await blob.upload(data, Buffer.byteLength(data), {

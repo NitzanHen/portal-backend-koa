@@ -1,13 +1,13 @@
 import Router from '@koa/router';
 import { err, ok } from '../common/Result.js';
-import { db } from '../peripheral/db.js';
+import { getDbCollection } from '../peripheral/db.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
 import { UserSchema, UserWithIdSchema } from '../model/User.js';
 import { adminsOnly } from '../middleware/adminsOnly.js';
 import { validate } from '../middleware/validate.js';
 
-const userCollection = db.collection('users');
+const userCollection = getDbCollection('users');
 
 const router = new Router({
   prefix: '/user'
@@ -16,7 +16,7 @@ const router = new Router({
 router.get('/',
   adminsOnly,
   middlewareGuard(async ctx => {
-    const users = await userCollection.find({}).toArray();
+    const users = (await userCollection).find({}).toArray();
     ctx.body = ok(users);
   })
 );
@@ -45,7 +45,7 @@ router.get('/:_id',
   middlewareGuard(async ctx => {
     const { _id } = ctx.state;
 
-    const user = await userCollection.findOne({ _id });
+    const user = (await userCollection).findOne({ _id });
     if (!user) {
       ctx.status = 400;
       ctx.body = err('No user exists with the given id');

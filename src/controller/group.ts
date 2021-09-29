@@ -5,10 +5,8 @@ import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
 import { GroupSchema, GroupWithIdSchema } from '../model/Group.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
-import { db } from '../peripheral/db.js';
+import { groupService } from '../service/GroupService.js';
 import { CtxState } from '../types/CtxState.js';
-
-const groupCollection = db.collection('groups');
 
 const router = new Router<CtxState>({
   prefix: '/group'
@@ -18,7 +16,7 @@ router.get('/',
   middlewareGuard(async ctx => {
     const { user } = ctx.state;
 
-    const groups = await groupCollection.find({ groups: { $in: user.groups } }).toArray();
+    const groups = await groupService.findByGroups(user.groups);
 
     ctx.body = ok(groups);
   })
