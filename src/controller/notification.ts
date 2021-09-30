@@ -1,15 +1,15 @@
 import Router from '@koa/router';
 import { ObjectId } from 'bson';
 import { z } from 'zod';
-import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
-import { err, ok } from '../common/Result.js';
-import { adminsOnly } from '../middleware/adminsOnly.js';
-import { middlewareGuard } from '../middleware/middlewareGuard.js';
-import { validate } from '../middleware/validate.js';
-import { Notification, NotificationSchema, NotificationWithIdSchema } from '../model/Notification.js';
-import { ObjectIdSchema } from '../model/ObjectId.js';
-import { notificationService } from '../service/NotificationService.js';
-import { CtxState } from '../types/CtxState.js';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError';
+import { err, ok } from '../common/Result';
+import { adminsOnly } from '../middleware/adminsOnly';
+import { middlewareGuard } from '../middleware/middlewareGuard';
+import { validate } from '../middleware/validate';
+import { Notification, NotificationSchema, NotificationWithIdSchema } from '../model/Notification';
+import { ObjectIdSchema } from '../model/ObjectId';
+import { notificationService } from '../service/NotificationService';
+import { CtxState } from '../types/CtxState';
 
 const router = new Router<CtxState>({
   prefix: '/notification'

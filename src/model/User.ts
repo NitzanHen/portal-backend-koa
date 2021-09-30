@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ObjectIdSchema } from './ObjectId.js';
+import { ObjectIdSchema } from './ObjectId';
 
 export const UserSchema = z.object({
   oid: z.string(),

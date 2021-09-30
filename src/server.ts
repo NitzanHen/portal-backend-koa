@@ -1,11 +1,11 @@
-import './peripheral/loadEnv.js';
+import './peripheral/loadEnv';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
-import loadControllers from './controller/index.js';
-import { authenticate } from './middleware/authenticate.js';
-import { CtxState } from './types/CtxState.js';
-import { logger } from './middleware/logger.js';
+import loadControllers from './controller/index';
+import { authenticate } from './middleware/authenticate';
+import { CtxState } from './types/CtxState';
+import { logger } from './middleware/logger';
 
 const app = new Koa<CtxState>();
 

@@ -4,7 +4,6 @@
   "main": "build/server.js",
   "module": "build/server.js",
   "license": "MIT",
-  "type": "module",
   "scripts": {
     "build": "tsc",
     "dev": "tsc-watch --onSuccess \"node build/server.js\"",

@@ -1,15 +1,15 @@
 import Router from '@koa/router';
 import { ObjectId } from 'bson';
 import { z } from 'zod';
-import { err, ok } from '../common/Result.js';
-import { middlewareGuard } from '../middleware/middlewareGuard.js';
-import { ObjectIdSchema } from '../model/ObjectId.js';
-import { UserSchema, UserWithIdSchema } from '../model/User.js';
-import { adminsOnly } from '../middleware/adminsOnly.js';
-import { validate } from '../middleware/validate.js';
-import { CtxState } from '../types/CtxState.js';
-import { userService } from '../service/UserService.js';
-import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
+import { err, ok } from '../common/Result';
+import { middlewareGuard } from '../middleware/middlewareGuard';
+import { ObjectIdSchema } from '../model/ObjectId';
+import { UserSchema, UserWithIdSchema } from '../model/User';
+import { adminsOnly } from '../middleware/adminsOnly';
+import { validate } from '../middleware/validate';
+import { CtxState } from '../types/CtxState';
+import { userService } from '../service/UserService';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError';
 
 const router = new Router<CtxState>({
   prefix: '/user'

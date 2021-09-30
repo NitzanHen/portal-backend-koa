@@ -1,11 +1,11 @@
 import Koa from 'koa';
-import userController from './user.js';
-import groupController from './group.js';
-import appController from './application.js';
-import notificationController from './notification.js';
-import imageController from './image.js';
-import categoryController from './category.js';
-import tagController from './tag.js';
+import userController from './user';
+import groupController from './group';
+import appController from './application';
+import notificationController from './notification';
+import imageController from './image';
+import categoryController from './category';
+import tagController from './tag';
 
 const loadControllers = (app: Koa) => {
   app.use(userController.routes());

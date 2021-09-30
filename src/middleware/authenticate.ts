@@ -1,14 +1,14 @@
 import { Middleware } from 'koa';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
-import { getEnvVariableSafely } from '../common/getEnvVariableSafely.js';
-import { CtxState } from '../types/CtxState.js';
-import { JwtCache } from '../common/JwtCache.js';
-import { err } from '../common/Result.js';
-import { safeTry } from '../common/safeTry.js';
-import { userService } from '../service/UserService.js';
-import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
-import { middlewareGuard } from './middlewareGuard.js';
+import { getEnvVariableSafely } from '../common/getEnvVariableSafely';
+import { CtxState } from '../types/CtxState';
+import { JwtCache } from '../common/JwtCache';
+import { err } from '../common/Result';
+import { safeTry } from '../common/safeTry';
+import { userService } from '../service/UserService';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError';
+import { middlewareGuard } from './middlewareGuard';
 
 const tokenEndpoint = getEnvVariableSafely('AZURE_AD_TOKEN_ENDPOINT');
 const clientId = getEnvVariableSafely('AZURE_CLIENT_ID');

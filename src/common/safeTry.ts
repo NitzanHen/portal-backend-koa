@@ -1,4 +1,4 @@
-import { err, ok, Result } from './Result.js';
+import { err, ok, Result } from './Result';
 
 /**
  * A safe variant of try-catch, which returns an error object instead of throwing

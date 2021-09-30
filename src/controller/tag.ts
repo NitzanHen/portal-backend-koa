@@ -1,15 +1,15 @@
 import Router from '@koa/router';
 import { ObjectId } from 'bson';
 import { z } from 'zod';
-import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
-import { err, ok } from '../common/Result.js';
-import { adminsOnly } from '../middleware/adminsOnly.js';
-import { middlewareGuard } from '../middleware/middlewareGuard.js';
-import { validate } from '../middleware/validate.js';
-import { ObjectIdSchema } from '../model/ObjectId.js';
-import { Tag, TagSchema, TagWithIdSchema } from '../model/Tag.js';
-import { tagService } from '../service/TagService.js';
-import { CtxState } from '../types/CtxState.js';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError';
+import { err, ok } from '../common/Result';
+import { adminsOnly } from '../middleware/adminsOnly';
+import { middlewareGuard } from '../middleware/middlewareGuard';
+import { validate } from '../middleware/validate';
+import { ObjectIdSchema } from '../model/ObjectId';
+import { Tag, TagSchema, TagWithIdSchema } from '../model/Tag';
+import { tagService } from '../service/TagService';
+import { CtxState } from '../types/CtxState';
 
 const router = new Router<CtxState>({
   prefix: '/tag'

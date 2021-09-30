@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ObjectIdSchema } from './ObjectId.js';
+import { ObjectIdSchema } from './ObjectId';
 
 export const TagSchema = z.object({
   name: z.string()

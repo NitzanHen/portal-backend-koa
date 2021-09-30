@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { Application } from './Application.js';
-import { ObjectIdSchema } from './ObjectId.js';
-import { User } from './User.js';
+import { Application } from './Application';
+import { ObjectIdSchema } from './ObjectId';
+import { User } from './User';
 
 export const GroupSchema = z.object({
   name: z.string()

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { DateStringSchema } from './DateString.js';
-import { ObjectIdSchema } from './ObjectId.js';
+import { DateStringSchema } from './DateString';
+import { ObjectIdSchema } from './ObjectId';
 
 export const ApplicationSchema = z.object({
   title: z.string(),

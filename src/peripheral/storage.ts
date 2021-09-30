@@ -1,5 +1,5 @@
 import { BlobServiceClient, StorageSharedKeyCredential } from '@azure/storage-blob';
-import { getEnvVariableSafely } from '../common/getEnvVariableSafely.js';
+import { getEnvVariableSafely } from '../common/getEnvVariableSafely';
 
 const storageAccount = getEnvVariableSafely('STORAGE_ACCOUNT_NAME');
 const storageAccountKey = getEnvVariableSafely('STORAGE_ACCOUNT_KEY');
