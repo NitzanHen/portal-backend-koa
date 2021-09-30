@@ -6,6 +6,7 @@ import loadControllers from './controller/index';
 import { authenticate } from './middleware/authenticate';
 import { CtxState } from './types/CtxState';
 import { loggerMiddleware } from './middleware/loggerMiddleware';
+import { logger } from './middleware/logger';
 
 const app = new Koa<CtxState>();
 
@@ -26,4 +27,4 @@ app.use(bodyParser());
 loadControllers(app);
 
 const PORT = process.env.PORT ?? 4000;
-app.listen(PORT, () => console.log(`Listening on port ${PORT}...`));
+app.listen(PORT, () => logger.info(`Listening on port ${PORT}...`));

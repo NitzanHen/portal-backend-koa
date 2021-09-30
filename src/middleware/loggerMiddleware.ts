@@ -1,15 +1,13 @@
-import chalk from 'chalk';
+import { cyan, green, red, redBright, yellow, grey, magenta, bold } from 'chalk';
 import { Middleware } from 'koa';
-
-/** @todo fix imports */
-const { cyan, green, red, redBright, yellow, grey, magenta, bold } = chalk;
+import { logger } from './logger';
 
 /**
  * Logs incoming requests and outgoing responses, response times, etc. 
  */
 export const loggerMiddleware: Middleware = async (ctx, next) => {
   const startTime = Date.now();
-  console.log(`Received ${bold(ctx.method)} request to ${green(ctx.originalUrl)}`);
+  logger.info(`Received ${bold(ctx.method)} request to ${green(ctx.originalUrl)}`);
   await next();
 
   const timeDiff = (Date.now() - startTime) / 1000;
@@ -33,5 +31,5 @@ export const loggerMiddleware: Middleware = async (ctx, next) => {
     return grey;
   })();
 
-  console.log(`${bold(ctx.method)} Request to ${green(ctx.originalUrl)} finished in ${logColor(timeDiff.toFixed(3) + 's')}, Response status: ${statusColor(ctx.status)}`);
+  logger.info(`${bold(ctx.method)} Request to ${green(ctx.originalUrl)} finished in ${logColor(timeDiff.toFixed(3) + 's')}, Response status: ${statusColor(ctx.status)}`);
 };

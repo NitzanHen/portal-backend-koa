@@ -9,6 +9,7 @@ import { safeTry } from '../common/safeTry';
 import { userService } from '../service/UserService';
 import { isNoSuchResourceError } from '../common/NoSuchResourceError';
 import { middlewareGuard } from './middlewareGuard';
+import { logger } from './logger';
 
 const tokenEndpoint = getEnvVariableSafely('AZURE_AD_TOKEN_ENDPOINT');
 const clientId = getEnvVariableSafely('AZURE_CLIENT_ID');
@@ -48,7 +49,7 @@ const loadPublicKeys = async (): Promise<[KidSignatureRecord, string]> => {
 const refreshKeys = () => loadPublicKeys().then(([record, iss]) => {
   kidSignatureRecord = record;
   issuer = iss;
-  console.log('Azure AD public keys & issuer url refreshed');
+  logger.info('Azure AD public keys & issuer url refreshed');
 });
 
 refreshKeys();
@@ -127,7 +128,6 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   }) as jwt.JwtPayload | null);
 
   if (!verifyResult.ok) {
-    console.log(verifyResult.err);
     return unauthorized();
   }
 
@@ -160,7 +160,6 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
 
   const user = result.data;
 
-  /** @todo make userController typed properly */
   jwtCache.cache(token, user, exp);
   ctx.state.user = user;
 
