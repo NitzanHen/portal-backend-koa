@@ -1,7 +1,7 @@
-import { User } from '../model/User';
+import { UserWithId } from '../model/User';
 import { Cache } from './Cache.js';
 
-export class JwtCache extends Cache<string, User> {
+export class JwtCache extends Cache<string, UserWithId> {
   static readonly cacheTime = 1000 * 60 * 60; /* Cache for one hour by default */
 
   private expCache: Map<string, number>;
@@ -12,7 +12,7 @@ export class JwtCache extends Cache<string, User> {
     this.expCache = new Map();
   }
 
-  cache(token: string, user: User, exp = Infinity) {
+  cache(token: string, user: UserWithId, exp = Infinity) {
     if (exp !== Infinity) {
       this.expCache.set(token, exp);
     }

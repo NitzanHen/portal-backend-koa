@@ -8,7 +8,7 @@ export const safeTry = <T>(fn: () => T): Result<T, unknown> => {
   try {
     return ok(fn());
   }
-  catch(e) {
+  catch (e) {
     return err(e);
   }
 };

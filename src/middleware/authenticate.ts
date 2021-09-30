@@ -2,20 +2,17 @@ import { Middleware } from 'koa';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import { getEnvVariableSafely } from '../common/getEnvVariableSafely.js';
-import { db } from '../peripheral/db.js';
 import { CtxState } from '../types/CtxState.js';
-import { User } from '../model/User.js';
 import { JwtCache } from '../common/JwtCache.js';
 import { err } from '../common/Result.js';
 import { safeTry } from '../common/safeTry.js';
+import { userService } from '../service/UserService.js';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
 import { middlewareGuard } from './middlewareGuard.js';
 
 const tokenEndpoint = getEnvVariableSafely('AZURE_AD_TOKEN_ENDPOINT');
 const clientId = getEnvVariableSafely('AZURE_CLIENT_ID');
 const tenantId = getEnvVariableSafely('AZURE_TENANT_ID');
-
-/** @todo do something to decouple this outta here. */
-const userController = db.collection('users');
 
 type KidSignatureRecord = Record<string, string>;
 
@@ -48,18 +45,15 @@ const loadPublicKeys = async (): Promise<[KidSignatureRecord, string]> => {
   return [kidSignatureRecord, issuerUrl];
 };
 
-await loadPublicKeys().then(([record, iss]) => {
-  kidSignatureRecord = record;
-  issuer = iss;
-  console.log('Azure AD public keys loaded');
-});
-
-/** Once a day, refresh the kid signature record */
-setInterval(() => loadPublicKeys().then(([record, iss]) => {
+const refreshKeys = () => loadPublicKeys().then(([record, iss]) => {
   kidSignatureRecord = record;
   issuer = iss;
   console.log('Azure AD public keys & issuer url refreshed');
-}), 1000 * 60 * 60 * 24);
+});
+
+refreshKeys();
+/** Once a day, refresh the kid signature record */
+setInterval(refreshKeys, 1000 * 60 * 60 * 24);
 
 const bearerRegex = /^Bearer ([A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*)$/;
 
@@ -151,19 +145,24 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   // All checks passed. Fetch a user and attach it to ctx.
   // Note that from this point, we don't return 401 on an error - the user *is* authenticated.
 
-  console.log(await userController.find({}).toArray());
+  const result = await userService.findByOID(oid);
+  if (!result.ok) {
+    const { err: error } = result;
+    if (isNoSuchResourceError(error)) {
+      // JWT token is valid, but the user is not registered in the portal's databases.
+      ctx.status = 403;
+      ctx.body = "JWT token is valid but the user isn't registered to the Agamim Portal.";
+      return;
+    }
 
-  const user = await userController.findOne({ oid });
-  if (!user) {
-    // JWT token is valid, but the user is not registered in the portal's databases.
-    ctx.status = 403;
-    ctx.body = "JWT token is valid but the user isn't registered to the Agamim Portal.";
-    return;
+    throw error;
   }
 
+  const user = result.data;
+
   /** @todo make userController typed properly */
-  jwtCache.cache(token, user as User, exp);
-  ctx.state.user = user as User;
+  jwtCache.cache(token, user, exp);
+  ctx.state.user = user;
 
   await next();
 });

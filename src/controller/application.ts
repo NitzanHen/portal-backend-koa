@@ -69,15 +69,7 @@ router.post<{ app: Application }>(
 
     const result = await appService.insert(app);
     if (!result.ok) {
-      const { err: error } = result;
-      if (isNoSuchResourceError(error)) {
-        ctx.status = 400;
-        ctx.body = err(error.message);
-        return;
-      }
-
-      // Unexpected error.
-      throw error;
+      throw result.err;
     }
 
     ctx.body = ok(result.data);
@@ -96,10 +88,10 @@ router.patch<{ patch: PartialApplicationWithId }>(
   middlewareGuard(async ctx => {
     const { patch } = ctx.state;
 
-    const response = await appService.update(patch._id, patch);
+    const result = await appService.update(patch._id, patch);
 
-    if (!response.ok) {
-      const { err: error } = response;
+    if (!result.ok) {
+      const { err: error } = result;
       if (isNoSuchResourceError(error)) {
         ctx.status = 400;
         ctx.body = err(error.message);
@@ -109,7 +101,7 @@ router.patch<{ patch: PartialApplicationWithId }>(
       throw error;
     }
 
-    ctx.body = ok(response.data);
+    ctx.body = ok(result.data);
   })
 );
 
@@ -120,9 +112,9 @@ router.delete<{ _id: ObjectId }>(
   middlewareGuard(async ctx => {
     const { _id } = ctx.state;
 
-    const response = await appService.delete(_id);
-    if (!response.ok) {
-      const { err: error } = response;
+    const result = await appService.delete(_id);
+    if (!result.ok) {
+      const { err: error } = result;
       if (isNoSuchResourceError(error)) {
         ctx.status = 400;
         ctx.body = err(error.message);
@@ -132,7 +124,7 @@ router.delete<{ _id: ObjectId }>(
       throw error;
     }
 
-    ctx.body = ok(response.data);
+    ctx.body = ok(result.data);
   })
 );
 

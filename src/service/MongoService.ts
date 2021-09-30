@@ -22,7 +22,7 @@ export class MongoService<T> implements Service<T, ObjectId> {
    * This is where collection indexes should be defined.
    * Override this function in a subclass if indexes are needed.
    */
-  // eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-empty-function, unused-imports/no-unused-vars
   createIndexes(collection: Collection<T>) { }
 
   async insert(obj: T) {

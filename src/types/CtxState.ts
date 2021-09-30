@@ -1,5 +1,5 @@
-import { User } from '../model/User';
+import { UserWithId } from '../model/User';
 
 export interface CtxState {
-  user: User;
+  user: UserWithId;
 }

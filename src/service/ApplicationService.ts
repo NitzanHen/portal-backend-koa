@@ -13,11 +13,11 @@ class ApplicationService extends MongoService<OptionalId<Application>> {
     return !(await this.collection.findOne({ title }, { projection: { _id: 1 } }));
   }
 
-  findByGroups(groups: ObjectId[]): Promise<Application[]> {
+  findByGroups(groupIds: ObjectId[]): Promise<Application[]> {
     return this.collection.aggregate([
       {
         $match: {
-          groups: { $in: groups }
+          groups: { $in: groupIds }
         }
       },
       {

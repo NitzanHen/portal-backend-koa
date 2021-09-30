@@ -1,96 +1,117 @@
 import Router from '@koa/router';
+import { ObjectId } from 'bson';
+import { z } from 'zod';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
 import { err, ok } from '../common/Result.js';
 import { adminsOnly } from '../middleware/adminsOnly.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
-import { TagSchema, TagWithIdSchema } from '../model/Tag.js';
-import { db } from '../peripheral/db.js';
+import { Tag, TagSchema, TagWithIdSchema } from '../model/Tag.js';
+import { tagService } from '../service/TagService.js';
+import { CtxState } from '../types/CtxState.js';
 
-const tagCollection = db.collection('tags');
-
-const router = new Router({
+const router = new Router<CtxState>({
   prefix: '/tag'
 });
 
 router.get('/',
   middlewareGuard(async ctx => {
-    const tags = await tagCollection.find({}).toArray();
+    const result = await tagService.findAll();
+    if (!result.ok) {
+      throw result.err;
+    }
 
-    ctx.body = ok(tags);
+    ctx.body = ok(result.data);
   })
 );
 
-router.get('/:id',
-  validate(ObjectIdSchema, ['params', 'id']),
+router.get<{ _id: ObjectId }>(
+  '/:_id',
+  validate(ObjectIdSchema, '_id', ['params', '_id']),
   middlewareGuard(async ctx => {
-    const { id } = ctx.params;
-    const tag = await tagCollection.findOne({ _id: id });
+    const { _id } = ctx.state;
+    const result = await tagService.findById(_id);
 
-    if (!tag) {
-      ctx.status = 400;
-      ctx.body = err('No tag exists with the given id');
-      return;
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
     }
-    ctx.body = ok(tag);
+
+    ctx.body = ok(result.data);
   }),
 );
 
-router.post('/',
+router.post<{ tag: Tag }>(
+  '/',
   adminsOnly,
-  validate(TagSchema, ['request', 'body']),
+  validate(TagSchema, 'tag', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const tag = ctx.request.body;
+    const { tag } = ctx.state;
 
-    const response = await tagCollection.insertOne(tag);
+    const result = await tagService.insert(tag);
+    if (!result.ok) {
+      throw result.err;
+    }
 
-    ctx.body = ok({ _id: response.insertedId, ...tag });
+    ctx.body = ok(result.data);
   })
 );
 
-const PartialTagWithIdSchema = TagWithIdSchema.partial();
+const PartialTagWithIdSchema = TagWithIdSchema.partial().extend({
+  _id: ObjectIdSchema
+});
+interface PartialTagWithId extends z.infer<typeof PartialTagWithIdSchema> { }
 
-router.patch('/',
+router.patch<{ patch: PartialTagWithId }>(
+  '/',
   adminsOnly,
-  validate(PartialTagWithIdSchema, ['request', 'body']),
+  validate(PartialTagWithIdSchema, 'patch', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const tag = ctx.body;
+    const { patch } = ctx.state;
 
-    const response = await tagCollection.findOneAndUpdate(
-      { _id: tag._id },
-      { $set: tag },
-      { returnDocument: 'after' }
-    );
+    const result = await tagService.update(patch._id, patch);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
 
-    if (!response.ok) {
-      throw new Error('unknown error occured when attempting to update the tag');
-    }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No tag exists with the given id');
+      throw error;
     }
 
-    ctx.body = ok(response.value);
+    ctx.body = ok(result.data);
   })
 );
 
-router.delete('/',
+router.delete<{ _id: ObjectId }>(
+  '/',
   adminsOnly,
-  validate(ObjectIdSchema, ['request', 'body', '_id']),
+  validate(ObjectIdSchema, '_id', ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
-    const { _id } = ctx.body;
+    const { _id } = ctx.state;
 
-    const response = await tagCollection.findOneAndDelete({ _id });
-    if (!response.ok) {
-      throw new Error('Unknown error occured while attempting to delete a tag');
-    }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No tag exists with the given id');
-      return;
+    const result = await tagService.delete(_id);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
     }
 
-    ctx.body = ok(response.value);
+    ctx.body = ok(result.data);
   })
 );
 

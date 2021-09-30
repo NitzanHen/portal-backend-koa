@@ -1,168 +1,173 @@
 import Router from '@koa/router';
+import { ObjectId } from 'bson';
+import { z } from 'zod';
 import { err, ok } from '../common/Result.js';
-import { getDbCollection } from '../peripheral/db.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
 import { UserSchema, UserWithIdSchema } from '../model/User.js';
 import { adminsOnly } from '../middleware/adminsOnly.js';
 import { validate } from '../middleware/validate.js';
+import { CtxState } from '../types/CtxState.js';
+import { userService } from '../service/UserService.js';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
 
-const userCollection = getDbCollection('users');
-
-const router = new Router({
+const router = new Router<CtxState>({
   prefix: '/user'
 });
 
-router.get('/',
+router.get(
+  '/',
   adminsOnly,
   middlewareGuard(async ctx => {
-    const users = (await userCollection).find({}).toArray();
-    ctx.body = ok(users);
+    const result = await userService.findAll();
+    if (!result.ok) {
+      throw result.err;
+    }
+    ctx.body = ok(result.data);
   })
 );
 
 router.get('/me',
   middlewareGuard(async ctx => {
-    ctx.body = ok(ctx.state.user);
-  })
-);
-
-router.get('/:_id',
-  adminsOnly,
-  middlewareGuard(async (ctx, next) => {
-    // Validate id
-    const { _id } = ctx.params;
-    const result = ObjectIdSchema.safeParse(_id);
-    if (!result.success) {
-      ctx.status = 400;
-      ctx.body = err(result.error);
-      return;
-    }
-
-    ctx.state._id = result.data;
-    await next();
-  }),
-  middlewareGuard(async ctx => {
-    const { _id } = ctx.state;
-
-    const user = (await userCollection).findOne({ _id });
-    if (!user) {
-      ctx.status = 400;
-      ctx.body = err('No user exists with the given id');
-      return;
-    }
+    const { user } = ctx.state;
 
     ctx.body = ok(user);
   })
 );
 
-router.post('/',
+router.get<{ _id: ObjectId }>(
+  '/:_id',
   adminsOnly,
-  middlewareGuard(async (ctx, next) => {
-    // Validate request body
-    const result = UserSchema.safeParse(ctx.request.body);
-    if (!result.success) {
-      ctx.status = 400;
-      ctx.body = err(result.error);
-      return;
-    }
-
-    ctx.request.body = result.data;
-    await next();
-  }),
+  validate(ObjectIdSchema, '_id', ['params', '_id']),
   middlewareGuard(async ctx => {
-    const user = ctx.request.body;
+    const { _id } = ctx.state;
+    const result = await userService.findById(_id);
 
-    const response = await userCollection.insertOne(user);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
 
-    ctx.body = ok({ _id: response.insertedId, ...user });
-  }));
-
-const PartialUserWithIdSchema = UserWithIdSchema.partial();
-
-router.patch('/',
-  adminsOnly,
-  middlewareGuard(async (ctx, next) => {
-    // Validate request body
-    const result = PartialUserWithIdSchema.safeParse(ctx.request.body);
-    if (!result.success) {
-      ctx.status = 400;
-      ctx.body = err(result.error);
-      return;
+      throw error;
     }
 
-    ctx.request.body = result.data;
-    await next();
-  }),
-  middlewareGuard(async ctx => {
-    const user = ctx.request.body;
-
-    const response = await userCollection.findOneAndUpdate(
-      { _id: user._id },
-      { $set: user },
-      { returnDocument: 'after' }
-    );
-    if (!response.ok) {
-      throw new Error('unknown error occured when attempting to update the user');
-    }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No user exists with the given id');
-    }
-
-    ctx.body = ok(response.value);
-  }));
-
-router.delete('/',
-  adminsOnly,
-  middlewareGuard(async (ctx, next) => {
-    const { _id } = ctx.request.body;
-
-    const result = ObjectIdSchema.safeParse(_id);
-    if (!result.success) {
-      ctx.status = 400;
-      ctx.body = err(result.error);
-      return;
-    }
-
-    ctx.request.body._id = result.data;
-    await next();
-  }),
-  middlewareGuard(async ctx => {
-    const { _id } = ctx.request.body;
-
-    const response = await userCollection.findOneAndDelete({ _id });
-    if (!response.ok) {
-      throw new Error('unknown error occured when attempting to delete the user');
-    }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No user exists with the given id');
-      return;
-    }
-
-    ctx.body = ok(response.value);
-  }),
-);
-
-router.post('/favourite',
-  validate(ObjectIdSchema, ['body']),
-  middlewareGuard(async ctx => {
-    const appId = ctx.body;
-    const { _id } = ctx.state.user;
-    const newUser = await userCollection.findOneAndUpdate({ _id }, { $addToSet: { favorites: appId } });
-
-    ctx.body = ok(newUser);
+    ctx.body = ok(result.data);
   })
 );
-router.delete('/:id/favourite',
-  validate(ObjectIdSchema, ['body']),
-  middlewareGuard(async ctx => {
-    const appId = ctx.body;
-    const { _id } = ctx.state.user;
-    const newUser = await userCollection.findOneAndUpdate({ _id }, { $pull: { favorites: appId } });
 
-    ctx.body = ok(newUser);
+router.post('/',
+  adminsOnly,
+  validate(UserSchema, 'user', ['request', 'body']),
+  middlewareGuard(async ctx => {
+    const { user } = ctx.state;
+
+    const result = await userService.insert(user);
+    if (!result.ok) {
+      throw result.err;
+    }
+
+    ctx.body = ok(result.data);
+  })
+);
+
+const PartialUserWithIdSchema = UserWithIdSchema.partial().extend({
+  _id: ObjectIdSchema
+});
+interface PartialUserWithId extends z.infer<typeof PartialUserWithIdSchema> { }
+
+router.patch<{ patch: PartialUserWithId }>(
+  '/',
+  adminsOnly,
+  validate(PartialUserWithIdSchema, 'patch', ['request', 'body']),
+  middlewareGuard(async ctx => {
+    const { patch } = ctx.state;
+
+    const result = await userService.update(patch._id, patch);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
+    }
+
+    ctx.body = ok(result.data);
   }));
+
+router.delete<{ _id: ObjectId }>(
+  '/',
+  adminsOnly,
+  validate(ObjectIdSchema, '_id', ['request', 'body', '_id']),
+  middlewareGuard(async ctx => {
+    const { _id } = ctx.state;
+
+    const result = await userService.delete(_id);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
+    }
+
+    ctx.body = ok(result.data);
+  }),
+);
+
+router.post<{ appId: ObjectId }>(
+  '/favourite',
+  validate(ObjectIdSchema, 'appId', ['body', 'appId']),
+  middlewareGuard(async ctx => {
+    const { appId } = ctx.state;
+    const { _id } = ctx.state.user;
+
+    const result = await userService.addFavourite(_id, appId);
+
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
+    }
+
+    ctx.body = ok(result.data);
+  })
+);
+router.delete<{ appId: ObjectId }>(
+  '/favourite',
+  validate(ObjectIdSchema, 'appId', ['body', 'appId']),
+  middlewareGuard(async ctx => {
+    const { appId } = ctx.state;
+    const { _id } = ctx.state.user;
+
+    const result = await userService.removeFavourite(_id, appId);
+
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
+    }
+
+    ctx.body = ok(result.data);
+  })
+);
 
 export default router;

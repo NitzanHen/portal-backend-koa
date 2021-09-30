@@ -1,9 +1,12 @@
 import Router from '@koa/router';
+import { ObjectId } from 'bson';
+import { z } from 'zod';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
 import { err, ok } from '../common/Result.js';
 import { adminsOnly } from '../middleware/adminsOnly.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
-import { GroupSchema, GroupWithIdSchema } from '../model/Group.js';
+import { Group, GroupSchema, GroupWithIdSchema } from '../model/Group.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
 import { groupService } from '../service/GroupService.js';
 import { CtxState } from '../types/CtxState.js';
@@ -25,116 +28,103 @@ router.get('/',
 router.get('/management',
   adminsOnly,
   middlewareGuard(async ctx => {
-    const groups = await groupCollection.aggregate([{
-      $lookup: {
-        from: 'applications',
-        localField: '_id',
-        foreignField: 'groups',
-        as: 'applications'
-      }
-    }, {
-      $set: {
-        applications: {
-          $map: {
-            input: '$applications',
-            as: 'app',
-            in: { _id: '$$app._id', title: '$$app.title' }
-          }
-        }
-      }
-    }, {
-      $lookup: {
-        from: 'users',
-        localField: '_id',
-        foreignField: 'groups',
-        as: 'users'
-      }
-    }, {
-      $set: {
-        users: {
-          $map: {
-            input: '$users',
-            as: 'user',
-            in: { _id: '$$user._id', displayName: '$$user.displayName' }
-          }
-        }
-      }
-    }]).toArray();
-
-    ctx.body = ok(groups);
+    const result = await groupService.getManagementData();
+    if(!result.ok) {
+      throw result.err;
+    }
+  
+    ctx.body = ok(result.data);
   })
 );
 
-router.get('/:id',
-  validate(ObjectIdSchema, ['params', 'id']),
+router.get<{ _id: ObjectId }>(
+  '/:_id',
+  validate(ObjectIdSchema, '_id', ['params', '_id']),
   middlewareGuard(async ctx => {
-    const { id } = ctx.params;
-    const group = await groupCollection.findOne({ _id: id });
+    const { _id } = ctx.state;
+    const result = await groupService.findById(_id);
 
-    if (!group) {
-      ctx.status = 400;
-      ctx.body = err('No group exists with the given id');
-      return;
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err('No group exists with the given id');
+        return;
+      }
+
+      throw error;
     }
-    ctx.body = ok(group);
+
+    ctx.body = ok(result.data);
   }),
 );
 
-router.post('/',
+router.post<{ group: Group }>(
+  '/',
   adminsOnly,
-  validate(GroupSchema, ['request', 'body']),
+  validate(GroupSchema, 'group', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const group = ctx.request.body;
+    const { group } = ctx.state;
 
-    const response = await groupCollection.insertOne(group);
+    const result = await groupService.insert(group);
+    if (!result.ok) {
+      throw result.err;
+    }
 
-    ctx.body = ok({ _id: response.insertedId, ...group });
+    ctx.body = ok(result.data);
   })
 );
 
-const PartialGroupWithIdSchema = GroupWithIdSchema.partial();
+const PartialGroupWithIdSchema = GroupWithIdSchema.partial().extend({
+  _id: ObjectIdSchema
+});
+interface PartialGroupWithId extends z.infer<typeof PartialGroupWithIdSchema> { }
 
-router.patch('/',
+router.patch<{ patch: PartialGroupWithId }>(
+  '/',
   adminsOnly,
-  validate(PartialGroupWithIdSchema, ['request', 'body']),
+  validate(PartialGroupWithIdSchema, 'patch', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const group = ctx.body;
+    const { patch } = ctx.state;
 
-    const response = await groupCollection.findOneAndUpdate(
-      { _id: group._id },
-      { $set: group },
-      { returnDocument: 'after' }
-    );
+    const result = await groupService.update(patch._id, patch);
 
-    if (!response.ok) {
-      throw new Error('unknown error occured when attempting to update the group');
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
     }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No group exists with the given id');
-    }
 
-    ctx.body = ok(response.value);
+    ctx.body = ok(result.data);
   })
 );
 
-router.delete('/',
+router.delete<{ _id: ObjectId }>(
+  '/',
   adminsOnly,
-  validate(ObjectIdSchema, ['request', 'body', '_id']),
+  validate(ObjectIdSchema, '_id', ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
-    const { _id } = ctx.body;
+    const { _id } = ctx.state;
 
-    const response = await groupCollection.findOneAndDelete({ _id });
-    if (!response.ok) {
-      throw new Error('Unknown error occured while attempting to delete a group');
-    }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No group exists with the given id');
-      return;
+    const result = await groupService.delete(_id);
+
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      throw error;
     }
 
-    ctx.body = ok(response.value);
+    ctx.body = ok(result.data);
   })
 );
 

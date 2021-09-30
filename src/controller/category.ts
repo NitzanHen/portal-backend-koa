@@ -53,14 +53,7 @@ router.post<{ category: Category }>(
 
     const result = await categoryService.insert(category);
     if (!result.ok) {
-      const { err: error } = result;
-      if (isNoSuchResourceError(error)) {
-        ctx.status = 400;
-        ctx.body = err(error.message);
-        return;
-      }
-
-      throw error;
+      throw result.err;
     }
     ctx.body = ok(result.data);
   })

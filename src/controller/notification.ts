@@ -1,15 +1,17 @@
 import Router from '@koa/router';
+import { ObjectId } from 'bson';
+import { z } from 'zod';
+import { isNoSuchResourceError } from '../common/NoSuchResourceError.js';
 import { err, ok } from '../common/Result.js';
 import { adminsOnly } from '../middleware/adminsOnly.js';
 import { middlewareGuard } from '../middleware/middlewareGuard.js';
 import { validate } from '../middleware/validate.js';
-import { NotificationSchema, NotificationWithIdSchema } from '../model/Notification.js';
+import { Notification, NotificationSchema, NotificationWithIdSchema } from '../model/Notification.js';
 import { ObjectIdSchema } from '../model/ObjectId.js';
-import { db } from '../peripheral/db.js';
+import { notificationService } from '../service/NotificationService.js';
+import { CtxState } from '../types/CtxState.js';
 
-const notificationController = db.collection('notifications');
-
-const router = new Router({
+const router = new Router<CtxState>({
   prefix: '/notification'
 });
 
@@ -17,84 +19,102 @@ router.get('/',
   middlewareGuard(async ctx => {
     const { user } = ctx.state;
 
-    const notifications = await notificationController.find({ groups: { $in: user.groups } }).toArray();
+    const notifications = await notificationService.findByGroups(user.groups);
 
     ctx.body = ok(notifications);
   }));
 
-router.get('/:_id',
-  validate(ObjectIdSchema, ['params', '_id']),
+router.get<{ _id: ObjectId }>(
+  '/:_id',
+  validate(ObjectIdSchema, '_id', ['params', '_id']),
   middlewareGuard(async ctx => {
-    const { _id } = ctx.params;
+    const { _id } = ctx.state;
 
-    const notification = await notificationController.findOne({ _id });
-    if (!notification) {
-      ctx.status = 400;
-      ctx.body = err('No notification exists with the given id');
+    const result = await notificationService.findById(_id);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      // Unexpected error.
+      throw error;
     }
 
-    ctx.body = ok(notification);
+    ctx.body = ok(result.data);
   })
 );
 
-router.post('/',
+router.post<{ notification: Notification }>(
+  '/',
   adminsOnly,
-  validate(NotificationSchema, ['request', 'body']),
+  validate(NotificationSchema, 'notification', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const notification = ctx.request.body;
+    const { notification } = ctx.state;
 
-    const response = await notificationController.insertOne(notification);
+    const result = await notificationService.insert(notification);
+    if (!result.ok) {
+      throw result.err;
+    }
 
-    ctx.body = ok({ _id: response.insertedId, ...notification });
+    ctx.body = ok(result.data);
   })
 );
 
-const PartialNotificationWithIdSchema = NotificationWithIdSchema.partial();
+const PartialNotificationWithIdSchema = NotificationWithIdSchema.partial().extend({
+  _id: ObjectIdSchema
+});
+interface PartialNotificationWithId extends z.infer<typeof PartialNotificationWithIdSchema> { }
 
-router.patch('/',
+router.patch<{ patch: PartialNotificationWithId }>(
+  '/',
   adminsOnly,
-  validate(PartialNotificationWithIdSchema, ['request', 'body']),
+  validate(PartialNotificationWithIdSchema, 'patch', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const notification = ctx.request.body;
+    const { patch } = ctx.state;
 
-    const response = await notificationController.findOneAndUpdate(
-      { _id: notification._id },
-      { $set: notification },
-      { returnDocument: 'after' }
-    );
+    const result = await notificationService.update(patch._id, patch);
 
-    if (!response.ok) {
-      throw new Error('unknown error occured when attempting to update the notification');
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      // Unexpected error.
+      throw error;
     }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No notification exists with the given id');
-    }
 
-    ctx.body = ok(response.value);
+    ctx.body = ok(result.data);
   })
 );
 
-router.delete('/',
+router.delete<{ _id: ObjectId }>(
+  '/',
   adminsOnly,
-  validate(ObjectIdSchema, ['request', 'body', '_id']),
+  validate(ObjectIdSchema, '_id', ['request', 'body', '_id']),
   middlewareGuard(async ctx => {
-    const { _id } = ctx.request.body;
+    const { _id } = ctx.state;
 
-    const response = await notificationController.findOneAndDelete({ _id });
-    if (!response.ok) {
-      throw new Error('Unknown error occured while attempting to delete a notification');
-    }
-    else if (!response.value) {
-      ctx.status = 400;
-      ctx.body = err('No notification exists with the given id');
-      return;
+    const result = await notificationService.delete(_id);
+    if (!result.ok) {
+      const { err: error } = result;
+      if (isNoSuchResourceError(error)) {
+        ctx.status = 400;
+        ctx.body = err(error.message);
+        return;
+      }
+
+      // Unexpected error.
+      throw error;
     }
 
-    ctx.body = ok(response.value);
+    ctx.body = ok(result.data);
   })
 );
-
-router.post('/');
 
 export default router;

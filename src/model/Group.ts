@@ -1,5 +1,7 @@
 import { z } from 'zod';
+import { Application } from './Application.js';
 import { ObjectIdSchema } from './ObjectId.js';
+import { User } from './User.js';
 
 export const GroupSchema = z.object({
   name: z.string()
@@ -12,3 +14,8 @@ export const GroupWithIdSchema = GroupSchema.extend({
 });
 
 export interface GroupWithId extends z.infer<typeof GroupWithIdSchema> {}
+
+export interface GroupWithManagementData {
+  applications: Application[];
+  users: User[];
+} 
