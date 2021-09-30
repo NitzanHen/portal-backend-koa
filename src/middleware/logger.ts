@@ -1,37 +1,31 @@
-import chalk from 'chalk';
-import { Middleware } from 'koa';
-
-/** @todo fix imports */
-const { cyan, green, red, redBright, yellow, grey, magenta, bold } = chalk;
+import { formatWithOptions } from 'util';
+import { red, cyan, blue } from 'chalk';
 
 /**
- * Logs incoming requests and outgoing responses, response times, etc. 
+ * Format a string for printing.
+ * This does little more than Node's default printing behaviour,
+ * but allows embedding objects into string without them turning into `[Object object]`.
  */
-export const logger: Middleware = async (ctx, next) => {
-  const startTime = Date.now();
-  console.log(`Received ${bold(ctx.method)} request to ${green(ctx.originalUrl)}`);
-  await next();
+export const format = (...args: unknown[]) => formatWithOptions({ colors: true }, ...args);
 
-  const timeDiff = (Date.now() - startTime) / 1000;
-  const logColor = (() => {
-    if (timeDiff < 0.5) return cyan;
-    else if (timeDiff < 3) return yellow;
-    else return red;
-  })();
-  const statusColor = (() => {
-    const { status } = ctx;
-    if (200 <= status && status < 300) {
-      return green;
-    }
-    else if (400 <= status && status < 500) {
-      return redBright;
-    }
-    else if (500 <= status && status < 600) {
-      return magenta;
-    }
 
-    return grey;
-  })();
+export class Logger {
+  constructor(public isDebug: boolean) { }
 
-  console.log(`${bold(ctx.method)} Request to ${green(ctx.originalUrl)} finished in ${logColor(timeDiff.toFixed(3) + 's')}, Response status: ${statusColor(ctx.status)}`);
-};
+  error(...errs: unknown[]) {
+    const prefixedErrs = errs.map(err => `[${red('ERROR')}]: ${format(err)}`).join('\n');
+    console.error(prefixedErrs);
+  }
+  debug(...messages: unknown[]) {
+    if (this.isDebug) {
+      const prefixedMesssages = messages.map(msg => `[${cyan('DEBUG')}]: ${format(msg)}`).join('\n');
+      console.log(prefixedMesssages);
+    }
+  }
+  info(...messages: unknown[]) {
+    const prefixedMesssages = messages.map(msg => `[${blue('INFO')}]: ${format(msg)}`).join('\n');
+    console.info(prefixedMesssages);
+  }
+}
+
+export const logger = new Logger(process.env.NODE_ENV === 'development');

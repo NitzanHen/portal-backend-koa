@@ -5,11 +5,11 @@ import cors from '@koa/cors';
 import loadControllers from './controller/index';
 import { authenticate } from './middleware/authenticate';
 import { CtxState } from './types/CtxState';
-import { logger } from './middleware/logger';
+import { loggerMiddleware } from './middleware/loggerMiddleware';
 
 const app = new Koa<CtxState>();
 
-app.use(logger);
+app.use(loggerMiddleware);
 
 app.use(cors());
 
