@@ -4,9 +4,11 @@ import axios from 'axios';
 import { getEnvVariableSafely } from '../common/getEnvVariableSafely';
 import { CtxState } from '../types/CtxState';
 import { JwtCache } from '../common/JwtCache';
-import { err } from '../common/Result';
+import { AsyncResult, err, ok } from '../common/Result';
 import { safeTry } from '../common/safeTry';
 import { userService } from '../service/UserService';
+import { UserWithId } from '../model/User';
+import { isUnauthorizedError, UnauthorizedError } from '../common/UnauthorizedError';
 import { isNoSuchResourceError } from '../common/NoSuchResourceError';
 import { middlewareGuard } from './middlewareGuard';
 import { logger } from './logger';
@@ -58,35 +60,25 @@ setInterval(refreshKeys, 1000 * 60 * 60 * 24);
 
 const bearerRegex = /^Bearer ([A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*)$/;
 
-
 /**
- * Authenticator middleware; expects an OAuth2 Bearer token, i.e.
- * an Authorization header containing `Bearer [token]`, where token is a JWT token.
+ * 
+ * @param bearer a Bearer token string.
+ * @returns A User if authentication is successful, an error otherwise.
+ * If Authentication fails, UnauthorizedError is returned.
  */
-export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, next) => {
+export const authenticateUser = async (bearer?: string): AsyncResult<UserWithId> => {
   if (!kidSignatureRecord) {
     console.error('kid signature record is not loaded; cannot authenticate requests');
-    ctx.status = 500;
-    ctx.body = err('Internal Server Error');
-    return;
+    return err(new Error('Internal Server Error'));
   }
 
-  /** Helper function to return 401 properly if one of the checks fails. */
-  const unauthorized = (message?: string) => {
-    ctx.headers['www-authenticate'] = 'Bearer';
-    ctx.status = 401;
-    if (message) {
-      ctx.body = err(message);
-    }
-    return;
-  };
+  const unauthorized = (message?: string) => err(new UnauthorizedError(message));
 
-
-  const { authorization } = ctx.header;
-  if (!authorization) {
+  if (!bearer) {
     return unauthorized('Requests must have the Authorization header set with a proper Bearer auth string, and a JWT token retrieved from Azure AD');
   }
-  const matches = authorization.match(bearerRegex);
+
+  const matches = bearer.match(bearerRegex);
 
   if (!matches || !matches[1]) {
     return unauthorized('Invalid Bearer auth string or JWT');
@@ -97,9 +89,9 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   //Check the cache for an existing token
   const cachedUser = jwtCache.get(token);
   if (cachedUser) {
-    ctx.state.user = cachedUser;
     jwtCache.refresh(token);
-    return await next();
+
+    return ok(cachedUser);
   }
 
   const jwtPayload = jwt.decode(token, {
@@ -139,29 +131,66 @@ export const authenticate: Middleware<CtxState> = middlewareGuard(async (ctx, ne
   const { oid, exp } = verifiedPayload;
   if (!oid) {
     // This should not be possible
-    throw new Error('Valid JWT token received that has no oid field');
+    return err(new Error('Valid JWT token received that has no oid field'));
   }
 
-  // All checks passed. Fetch a user and attach it to ctx.
+  // All checks passed. Fetch a user return it.
   // Note that from this point, we don't return 401 on an error - the user *is* authenticated.
 
   const result = await userService.findByOID(oid);
   if (!result.ok) {
-    const { err: error } = result;
-    if (isNoSuchResourceError(error)) {
-      // JWT token is valid, but the user is not registered in the portal's databases.
-      ctx.status = 403;
-      ctx.body = "JWT token is valid but the user isn't registered to the Agamim Portal.";
-      return;
-    }
-
-    throw error;
+    return result;
   }
 
   const user = result.data;
 
   jwtCache.cache(token, user, exp);
+
+  return ok(user);
+};
+
+/**
+ * Authenticator middleware; expects an OAuth2 Bearer token, i.e.
+ * an Authorization header containing `Bearer [token]`, where token is a JWT token.
+ */
+const authenticateMiddleware: Middleware<CtxState> = middlewareGuard(async (ctx, next) => {
+  if (!kidSignatureRecord) {
+    console.error('kid signature record is not loaded; cannot authenticate requests');
+    ctx.status = 500;
+    ctx.body = err('Internal Server Error');
+    return;
+  }
+
+  /** Helper function to return 401 properly if one of the checks fails. */
+  const unauthorized = (error: UnauthorizedError) => {
+    ctx.headers['www-authenticate'] = 'Bearer';
+    ctx.status = 401;
+    ctx.body = error;
+    return;
+  };
+
+  const authResult = await authenticateUser(ctx.header.authorization);
+  if (!authResult.ok) {
+    const { err: error } = authResult;
+    if (isUnauthorizedError(error)) {
+      return unauthorized(error);
+    }
+    else if (isNoSuchResourceError(error)) {
+      ctx.status = 403;
+      ctx.body = err("JWT token is valid but the user isn't registered to the Agamim Portal.");
+      return;
+    }
+
+    console.error(error);
+    ctx.status = 500;
+    ctx.body = err('Internal server error');
+    return;
+  }
+
+  const user = authResult.data;
   ctx.state.user = user;
 
   await next();
 });
+
+export { authenticateMiddleware as authenticate };
