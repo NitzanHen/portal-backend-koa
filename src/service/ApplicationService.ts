@@ -1,10 +1,9 @@
 import { ObjectId } from 'bson';
-import { OptionalId } from '../common/types';
-import { Application } from '../model/Application';
+import { Application, ApplicationWithId } from '../model/Application';
 import { getDbCollection } from '../peripheral/db';
 import { MongoService } from './MongoService';
 
-class ApplicationService extends MongoService<OptionalId<Application>> {
+class ApplicationService extends MongoService<Application, ApplicationWithId> {
   constructor() {
     super(getDbCollection('applications'));
   }

@@ -1,11 +1,10 @@
 import { ObjectId } from 'bson';
 import { AsyncResult, resultify } from '../common/Result';
-import { OptionalId } from '../common/types';
-import { Group, GroupWithManagementData } from '../model/Group';
+import { Group, GroupWithId, GroupWithManagementData } from '../model/Group';
 import { getDbCollection } from '../peripheral/db';
 import { MongoService } from './MongoService';
 
-class GroupService extends MongoService<OptionalId<Group>> {
+class GroupService extends MongoService<Group, GroupWithId> {
   constructor() {
     super(getDbCollection('groups'));
   }

@@ -1,9 +1,8 @@
-import { OptionalId } from '../common/types';
-import { Category } from '../model/Category';
+import { Category, CategoryWithId } from '../model/Category';
 import { getDbCollection } from '../peripheral/db';
 import { MongoService } from './MongoService';
 
-class CategoryService extends MongoService<OptionalId<Category>> {
+class CategoryService extends MongoService<Category, CategoryWithId> {
   constructor() {
     super(getDbCollection('categories'));
   }

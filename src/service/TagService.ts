@@ -1,10 +1,9 @@
 import { AsyncResult, resultify } from '../common/Result';
-import { OptionalId } from '../common/types';
 import { Tag, TagWithId } from '../model/Tag';
 import { getDbCollection } from '../peripheral/db';
 import { MongoService } from './MongoService';
 
-class TagService extends MongoService<OptionalId<Tag>> {
+class TagService extends MongoService<Tag, TagWithId> {
   constructor() {
     super(getDbCollection('tags'));
   }

@@ -1,12 +1,11 @@
 import { ObjectId } from 'bson';
 import { NoSuchResourceError } from '../common/NoSuchResourceError';
 import { AsyncResult, err, ok, resultify } from '../common/Result';
-import { OptionalId } from '../common/types';
 import { User, UserWithId } from '../model/User';
 import { getDbCollection } from '../peripheral/db';
 import { MongoService } from './MongoService';
 
-class UserService extends MongoService<OptionalId<User>> {
+class UserService extends MongoService<User, UserWithId> {
   constructor() {
     super(getDbCollection('users'));
   }
