@@ -6,10 +6,11 @@ import { err, ok } from '../common/Result';
 import { adminsOnly } from '../middleware/adminsOnly';
 import { middlewareGuard } from '../middleware/middlewareGuard';
 import { validate } from '../middleware/validate';
-import { Application, ApplicationSchema } from '../model/Application';
+import { Application, ApplicationSchema, NewApplicationSchema } from '../model/Application';
 import { ObjectIdSchema } from '../model/ObjectId';
 import { appService } from '../service/ApplicationService';
 import { CtxState } from '../types/CtxState';
+import { sendToClients } from '../websocket/wss';
 
 
 const router = new Router<CtxState>({
@@ -63,14 +64,17 @@ router.get<{ title: string }>(
 router.post<{ app: Application }>(
   '/',
   adminsOnly,
-  validate(ApplicationSchema, 'app', ['request', 'body']),
+  validate(NewApplicationSchema, 'app', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const { app } = ctx.state;
 
-    const result = await appService.insert(app);
+    const result = await appService.insert(ctx.state.app);
     if (!result.ok) {
       throw result.err;
     }
+
+    const createdApp = result.data;
+
+    sendToClients({ entityType: 'app', entity: createdApp._id, action: 'created' }, createdApp.groups);
 
     ctx.body = ok(result.data);
   })
@@ -101,7 +105,12 @@ router.patch<{ patch: PartialApplicationWithId }>(
       throw error;
     }
 
-    ctx.body = ok(result.data);
+    const updatedApp = result.data;
+    console.log(updatedApp);
+
+    sendToClients({ entityType: 'app', entity: updatedApp._id, action: 'updated' }, updatedApp.groups);
+
+    ctx.body = ok(updatedApp);
   })
 );
 
@@ -124,7 +133,10 @@ router.delete<{ _id: ObjectId }>(
       throw error;
     }
 
-    ctx.body = ok(result.data);
+    const deletedApp = result.data;
+    sendToClients({ entityType: 'app', entity: deletedApp._id, action: 'updated' }, deletedApp.groups);
+
+    ctx.body = ok(deletedApp);
   })
 );
 

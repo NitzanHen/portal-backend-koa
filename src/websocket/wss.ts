@@ -1,17 +1,19 @@
 import { WebSocket, WebSocketServer, MessageEvent } from 'ws';
 import { v4 as uuid } from 'uuid';
 import { ObjectId } from 'bson';
+import { magenta } from 'chalk';
 import { authenticateUser } from '../middleware/authenticate';
 import { SocketId } from '../common/types';
 import { UserWithId } from '../model/User';
-import { GroupWithId } from '../model/Group';
+import { logger } from '../middleware/logger';
 import { SocketListener } from './SocketListener';
 
 const AUTH_TIMEOUT_DURATION = 30_000;
 
 const authTimeouts = new Map<SocketId, NodeJS.Timeout>();
 const sockets = new Map<SocketId, SocketListener>();
-const groupRooms = new Map<GroupWithId['_id'], SocketListener[]>();
+
+const groupRooms = new Map<string, SocketListener[]>();
 
 export function initWebsocketServer(wss: WebSocketServer) {
   wss.on('connection', initWebsocket);
@@ -20,10 +22,16 @@ export function initWebsocketServer(wss: WebSocketServer) {
 function initWebsocket(socket: WebSocket) {
   const socketId = uuid();
 
+  logger.info(`Opened auth window for socket ${magenta(socketId)}`);
+
   const authTimeout = setTimeout(() => {
-    // Client did not authenticate in time. Disconnect it
+    // Client did not authenticate in time. Notify and disconnect it
+    socket.send('Auth window timed out');
     socket.close();
     authTimeouts.delete(socketId);
+
+    logger.info(`Auth window for socket ${magenta(socketId)} timed out`);
+
   }, AUTH_TIMEOUT_DURATION);
   authTimeouts.set(socketId, authTimeout);
 
@@ -65,22 +73,35 @@ function approveSocket(socketId: SocketId, socket: WebSocket, user: UserWithId) 
 
   // Add the listener to its group rooms
   for (const groupId of user.groups) {
-    const room = groupRooms.get(groupId) ?? [];
-    groupRooms.set(groupId, [...room, listener]);
+    const groupIdHex = groupId.toHexString();
+    const room = groupRooms.get(groupIdHex) ?? [];
+    groupRooms.set(groupIdHex, [...room, listener]);
   }
+
+  logger.info(`Socket ${magenta(socketId)} approved`);
 
   socket.on('close', () => {
     sockets.delete(socketId);
+    logger.info(`Socket ${magenta(socketId)} disconnected`);
   });
 }
 
 interface OutboundPayload {
   entityType: 'app' | 'category' | 'group' | 'notification' | 'tag' | 'user';
-  entity: ObjectId,
+  entity: ObjectId;
+  action: 'created' | 'updated' | 'deleted';
   [data: string]: unknown;
 }
-function send(payload: OutboundPayload, groups: GroupWithId[]) {
-  const allGroupListeners = groups.flatMap(({ _id }) => groupRooms.get(_id) ?? []);
+export async function sendToClients(payload: OutboundPayload, groups: ObjectId[]) {
+  const allGroupListeners = groups
+    .flatMap(_id => groupRooms.get(_id.toHexString()) ?? [])
+    .reduce((acc, listener) => ({
+      // Reduce into a socketId to listener record to remove duplicates
+      ...acc,
+      [listener.socketId]: listener
+    }), {} as Record<SocketId, SocketListener>);
 
-  allGroupListeners.forEach((listener => listener.send(payload)));
+  console.log(allGroupListeners, groups, groupRooms, payload);
+
+  Object.values(allGroupListeners).forEach((listener => listener.send(payload)));
 }
