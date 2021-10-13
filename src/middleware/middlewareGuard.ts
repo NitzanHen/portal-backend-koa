@@ -1,7 +1,7 @@
 import type { Middleware, ParameterizedContext } from 'koa';
 import { DefaultState, DefaultContext } from 'koa';
 import { Result } from '../common/Result';
-import { CtxState } from '../types/CtxState';
+import { CtxState } from '../common/CtxState';
 
 /**
  * Wraps the received middleware in a try/catch, returning status 500 to the sender if an error occures.

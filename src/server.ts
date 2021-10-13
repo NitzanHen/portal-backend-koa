@@ -5,7 +5,7 @@ import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
 import { WebSocketServer } from 'ws';
 import loadControllers from './controller/index';
-import { CtxState } from './types/CtxState';
+import { CtxState } from './common/CtxState';
 import { loggerMiddleware } from './middleware/loggerMiddleware';
 import { logger } from './middleware/logger';
 import { initWebsocketServer } from './websocket/wss';

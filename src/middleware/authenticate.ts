@@ -1,5 +1,5 @@
 import { Middleware } from 'koa';
-import { CtxState } from '../types/CtxState';
+import { CtxState } from '../common/CtxState';
 import { err } from '../common/Result';
 import { isUnauthorizedError, UnauthorizedError } from '../auth/UnauthorizedError';
 import { isNoSuchResourceError } from '../common/NoSuchResourceError';

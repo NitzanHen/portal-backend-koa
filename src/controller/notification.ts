@@ -9,7 +9,7 @@ import { validate } from '../middleware/validate';
 import { Notification, NotificationSchema, NotificationWithIdSchema } from '../model/Notification';
 import { ObjectIdSchema } from '../model/ObjectId';
 import { notificationService } from '../service/NotificationService';
-import { CtxState } from '../types/CtxState';
+import { CtxState } from '../common/CtxState';
 import { Channel } from '../websocket/Channel';
 import { sendToClients } from '../websocket/wss';
 

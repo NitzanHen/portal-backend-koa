@@ -9,7 +9,7 @@ import { validate } from '../middleware/validate';
 import { Application, ApplicationSchema, NewApplicationSchema } from '../model/Application';
 import { ObjectIdSchema } from '../model/ObjectId';
 import { appService } from '../service/ApplicationService';
-import { CtxState } from '../types/CtxState';
+import { CtxState } from '../common/CtxState';
 import { Channel } from '../websocket/Channel';
 import { sendToClients } from '../websocket/wss';
 

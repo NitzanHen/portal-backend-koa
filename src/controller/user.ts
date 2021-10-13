@@ -7,7 +7,7 @@ import { ObjectIdSchema } from '../model/ObjectId';
 import { UserSchema, UserWithIdSchema } from '../model/User';
 import { adminsOnly } from '../middleware/adminsOnly';
 import { validate } from '../middleware/validate';
-import { CtxState } from '../types/CtxState';
+import { CtxState } from '../common/CtxState';
 import { userService } from '../service/UserService';
 import { isNoSuchResourceError } from '../common/NoSuchResourceError';
 import { sendToClients } from '../websocket/wss';
