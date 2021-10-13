@@ -3,12 +3,12 @@ import { v4 as uuid } from 'uuid';
 import { ObjectId } from 'bson';
 import { magenta } from 'chalk';
 import { authenticateUser } from '../middleware/authenticate';
-import { SocketId } from '../common/types';
 import { UserWithId } from '../model/User';
 import { logger } from '../middleware/logger';
 import { SocketListener } from './SocketListener';
 import { Channel } from './Channel';
 import { socketPayload } from './SocketPayload';
+import { SocketId } from './SocketId';
 
 const AUTH_TIMEOUT_DURATION = 30_000;
 

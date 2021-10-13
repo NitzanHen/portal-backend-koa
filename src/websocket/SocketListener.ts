@@ -1,7 +1,7 @@
 import { WebSocket } from 'ws';
-import { SocketId } from '../common/types';
 import { UserWithId } from '../model/User';
 import { Channel } from './Channel';
+import { SocketId } from './SocketId';
 import { socketPayload } from './SocketPayload';
 
 /**
