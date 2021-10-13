@@ -1,5 +1,5 @@
 import { UserWithId } from '../model/User';
-import { Cache } from './Cache';
+import { Cache } from '../common/Cache';
 
 export class JwtCache extends Cache<string, UserWithId> {
   static readonly cacheTime = 1000 * 60 * 60; /* Cache for one hour by default */

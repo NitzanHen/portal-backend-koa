@@ -5,11 +5,11 @@ import bodyParser from 'koa-bodyparser';
 import cors from '@koa/cors';
 import { WebSocketServer } from 'ws';
 import loadControllers from './controller/index';
-import { authenticate } from './middleware/authenticate';
 import { CtxState } from './types/CtxState';
 import { loggerMiddleware } from './middleware/loggerMiddleware';
 import { logger } from './middleware/logger';
 import { initWebsocketServer } from './websocket/wss';
+import { authenticateMiddleware } from './middleware/authenticate';
 
 const app = new Koa<CtxState>();
 
@@ -17,7 +17,7 @@ app.use(loggerMiddleware);
 
 app.use(cors());
 
-app.use(authenticate);
+app.use(authenticateMiddleware);
 
 app.use(async (ctx, next) => {
   if (ctx.path.startsWith('/image')) {

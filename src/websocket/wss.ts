@@ -2,9 +2,9 @@ import { WebSocket, WebSocketServer, MessageEvent } from 'ws';
 import { v4 as uuid } from 'uuid';
 import { ObjectId } from 'bson';
 import { magenta } from 'chalk';
-import { authenticateUser } from '../middleware/authenticate';
 import { UserWithId } from '../model/User';
 import { logger } from '../middleware/logger';
+import { authenticate } from '../auth/authenticate';
 import { SocketListener } from './SocketListener';
 import { Channel } from './Channel';
 import { socketPayload } from './SocketPayload';
@@ -40,19 +40,19 @@ function initWebsocket(socket: WebSocket) {
   }, AUTH_TIMEOUT_DURATION);
   authTimeouts.set(socketId, authTimeout);
 
-  socket.addEventListener('message', message => authenticate(socketId, message));
+  socket.addEventListener('message', message => authenticateSocket(socketId, message));
 }
 
 /**
  * Checks a socket's authentication.
  */
-async function authenticate(socketId: SocketId, message: MessageEvent) {
+async function authenticateSocket(socketId: SocketId, message: MessageEvent) {
   const bearerString = message.data.toString();
   const socket = message.target;
 
   // todo return a response on success or failure
 
-  const authResult = await authenticateUser(bearerString);
+  const authResult = await authenticate(bearerString);
   if (!authResult.ok) {
     const { err: error } = authResult;
     return socket.send(JSON.stringify(socketPayload(
