@@ -10,6 +10,8 @@ import { Category, CategorySchema, CategoryWithIdSchema } from '../model/Categor
 import { ObjectIdSchema } from '../model/ObjectId';
 import { categoryService } from '../service/CategoryService';
 import { CtxState } from '../types/CtxState';
+import { Channel } from '../websocket/Channel';
+import { sendToClients } from '../websocket/wss';
 
 const router = new Router<CtxState>({
   prefix: '/category'
@@ -49,12 +51,15 @@ router.post<{ category: Category }>(
   adminsOnly,
   validate(CategorySchema, 'category', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const category = ctx.request.body;
-
-    const result = await categoryService.insert(category);
+    const result = await categoryService.insert(ctx.state.category);
     if (!result.ok) {
       throw result.err;
     }
+
+    const createdCategory = result.data;
+
+    sendToClients(Channel.CATEGORY, { entity: createdCategory._id, action: 'created', data: createdCategory }, '*');
+
     ctx.body = ok(result.data);
   })
 );
@@ -84,6 +89,10 @@ router.patch<{ patch: PartialCategoryWithId }>(
       throw error;
     }
 
+    const updatedCategory = result.data;
+
+    sendToClients(Channel.CATEGORY, { entity: updatedCategory._id, action: 'updated', data: updatedCategory }, '*');
+
     ctx.body = ok(result.data);
   })
 );
@@ -106,6 +115,10 @@ router.delete<{ _id: ObjectId }>('/',
 
       throw error;
     }
+
+    const deletedCategory = result.data;
+
+    sendToClients(Channel.CATEGORY, { entity: deletedCategory._id, action: 'deleted', data: deletedCategory }, '*');
 
     ctx.body = ok(result.data);
   })

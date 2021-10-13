@@ -10,6 +10,8 @@ import { ObjectIdSchema } from '../model/ObjectId';
 import { Tag, TagSchema, TagWithIdSchema } from '../model/Tag';
 import { tagService } from '../service/TagService';
 import { CtxState } from '../types/CtxState';
+import { Channel } from '../websocket/Channel';
+import { sendToClients } from '../websocket/wss';
 
 const router = new Router<CtxState>({
   prefix: '/tag'
@@ -60,7 +62,11 @@ router.post<{ tag: Tag }>(
       throw result.err;
     }
 
-    ctx.body = ok(result.data);
+    const createdTag = result.data;
+
+    sendToClients(Channel.NOTIFICATION, { entity: createdTag._id, action: 'created', data: createdTag }, '*');
+
+    ctx.body = ok(createdTag);
   })
 );
 
@@ -88,7 +94,11 @@ router.patch<{ patch: PartialTagWithId }>(
       throw error;
     }
 
-    ctx.body = ok(result.data);
+    const updatedTag = result.data;
+
+    sendToClients(Channel.NOTIFICATION, { entity: updatedTag._id, action: 'updated', data: updatedTag }, '*');
+
+    ctx.body = ok(updatedTag);
   })
 );
 
@@ -111,7 +121,11 @@ router.delete<{ _id: ObjectId }>(
       throw error;
     }
 
-    ctx.body = ok(result.data);
+    const deletedTag = result.data;
+
+    sendToClients(Channel.NOTIFICATION, { entity: deletedTag._id, action: 'deleted', data: deletedTag }, '*');
+
+    ctx.body = ok(deletedTag);
   })
 );
 

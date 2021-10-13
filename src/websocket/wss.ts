@@ -7,6 +7,8 @@ import { SocketId } from '../common/types';
 import { UserWithId } from '../model/User';
 import { logger } from '../middleware/logger';
 import { SocketListener } from './SocketListener';
+import { Channel } from './Channel';
+import { socketPayload } from './SocketPayload';
 
 const AUTH_TIMEOUT_DURATION = 30_000;
 
@@ -26,7 +28,10 @@ function initWebsocket(socket: WebSocket) {
 
   const authTimeout = setTimeout(() => {
     // Client did not authenticate in time. Notify and disconnect it
-    socket.send('Auth window timed out');
+    socket.send(JSON.stringify(socketPayload(
+      Channel.AUTH,
+      'Auth window timed out'
+    )));
     socket.close();
     authTimeouts.delete(socketId);
 
@@ -47,15 +52,19 @@ async function authenticate(socketId: SocketId, message: MessageEvent) {
 
   // todo return a response on success or failure
 
-  if (!bearerString) {
-    return;
-  }
-
   const authResult = await authenticateUser(bearerString);
   if (!authResult.ok) {
-    return;
+    const { err: error } = authResult;
+    return socket.send(JSON.stringify(socketPayload(
+      Channel.AUTH,
+      (error as Error).message ?? error
+    )));
   }
 
+  socket.send(JSON.stringify(socketPayload(
+    Channel.AUTH,
+    'Authentication successful'
+  )));
   const user = authResult.data;
   approveSocket(socketId, socket, user);
 }
@@ -86,22 +95,23 @@ function approveSocket(socketId: SocketId, socket: WebSocket, user: UserWithId) 
   });
 }
 
-interface OutboundPayload {
-  entityType: 'app' | 'category' | 'group' | 'notification' | 'tag' | 'user';
+interface OutboundPayload<T> {
   entity: ObjectId;
   action: 'created' | 'updated' | 'deleted';
-  [data: string]: unknown;
+  data?: T
 }
-export async function sendToClients(payload: OutboundPayload, groups: ObjectId[]) {
-  const allGroupListeners = groups
-    .flatMap(_id => groupRooms.get(_id.toHexString()) ?? [])
+export async function sendToClients<T>(channel: Channel, payload: OutboundPayload<T>, groups: ObjectId[] | '*') {
+  const allGroupListeners = (
+    groups === '*'
+      ? [...groupRooms.values()]
+      : groups.map(_id => groupRooms.get(_id.toHexString()) ?? [])
+  )
+    .flat()
     .reduce((acc, listener) => ({
       // Reduce into a socketId to listener record to remove duplicates
       ...acc,
       [listener.socketId]: listener
     }), {} as Record<SocketId, SocketListener>);
 
-  console.log(allGroupListeners, groups, groupRooms, payload);
-
-  Object.values(allGroupListeners).forEach((listener => listener.send(payload)));
+  Object.values(allGroupListeners).forEach((listener => listener.send(channel, payload)));
 }

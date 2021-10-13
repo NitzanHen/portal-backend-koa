@@ -10,6 +10,7 @@ import { Application, ApplicationSchema, NewApplicationSchema } from '../model/A
 import { ObjectIdSchema } from '../model/ObjectId';
 import { appService } from '../service/ApplicationService';
 import { CtxState } from '../types/CtxState';
+import { Channel } from '../websocket/Channel';
 import { sendToClients } from '../websocket/wss';
 
 
@@ -74,7 +75,7 @@ router.post<{ app: Application }>(
 
     const createdApp = result.data;
 
-    sendToClients({ entityType: 'app', entity: createdApp._id, action: 'created' }, createdApp.groups);
+    sendToClients(Channel.APP, { entity: createdApp._id, action: 'created', data: createdApp }, createdApp.groups);
 
     ctx.body = ok(result.data);
   })
@@ -108,7 +109,7 @@ router.patch<{ patch: PartialApplicationWithId }>(
     const updatedApp = result.data;
     console.log(updatedApp);
 
-    sendToClients({ entityType: 'app', entity: updatedApp._id, action: 'updated' }, updatedApp.groups);
+    sendToClients(Channel.APP, { entity: updatedApp._id, action: 'updated', data: updatedApp }, updatedApp.groups);
 
     ctx.body = ok(updatedApp);
   })
@@ -134,7 +135,7 @@ router.delete<{ _id: ObjectId }>(
     }
 
     const deletedApp = result.data;
-    sendToClients({ entityType: 'app', entity: deletedApp._id, action: 'updated' }, deletedApp.groups);
+    sendToClients(Channel.APP, { entity: deletedApp._id, action: 'deleted', data: deletedApp }, deletedApp.groups);
 
     ctx.body = ok(deletedApp);
   })

@@ -10,6 +10,8 @@ import { validate } from '../middleware/validate';
 import { CtxState } from '../types/CtxState';
 import { userService } from '../service/UserService';
 import { isNoSuchResourceError } from '../common/NoSuchResourceError';
+import { sendToClients } from '../websocket/wss';
+import { Channel } from '../websocket/Channel';
 
 const router = new Router<CtxState>({
   prefix: '/user'
@@ -69,7 +71,11 @@ router.post('/',
       throw result.err;
     }
 
-    ctx.body = ok(result.data);
+    const createdUser = result.data;
+
+    sendToClients(Channel.NOTIFICATION, { entity: createdUser._id, action: 'created', data: createdUser }, '*');
+
+    ctx.body = ok(createdUser);
   })
 );
 
@@ -97,7 +103,11 @@ router.patch<{ patch: PartialUserWithId }>(
       throw error;
     }
 
-    ctx.body = ok(result.data);
+    const updatedUser = result.data;
+
+    sendToClients(Channel.NOTIFICATION, { entity: updatedUser._id, action: 'updated', data: updatedUser }, '*');
+
+    ctx.body = ok(updatedUser);
   }));
 
 router.delete<{ _id: ObjectId }>(
@@ -119,7 +129,11 @@ router.delete<{ _id: ObjectId }>(
       throw error;
     }
 
-    ctx.body = ok(result.data);
+    const deletedUser = result.data;
+
+    sendToClients(Channel.NOTIFICATION, { entity: deletedUser._id, action: 'deleted', data: deletedUser }, '*');
+
+    ctx.body = ok(deletedUser);
   }),
 );
 

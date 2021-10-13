@@ -10,6 +10,8 @@ import { Notification, NotificationSchema, NotificationWithIdSchema } from '../m
 import { ObjectIdSchema } from '../model/ObjectId';
 import { notificationService } from '../service/NotificationService';
 import { CtxState } from '../types/CtxState';
+import { Channel } from '../websocket/Channel';
+import { sendToClients } from '../websocket/wss';
 
 const router = new Router<CtxState>({
   prefix: '/notification'
@@ -52,12 +54,15 @@ router.post<{ notification: Notification }>(
   adminsOnly,
   validate(NotificationSchema, 'notification', ['request', 'body']),
   middlewareGuard(async ctx => {
-    const { notification } = ctx.state;
 
-    const result = await notificationService.insert(notification);
+    const result = await notificationService.insert(ctx.state.notification);
     if (!result.ok) {
       throw result.err;
     }
+
+    const createdNotification = result.data;
+
+    sendToClients(Channel.NOTIFICATION, { entity: createdNotification._id, action: 'created', data: createdNotification }, createdNotification.groups);
 
     ctx.body = ok(result.data);
   })
@@ -89,7 +94,11 @@ router.patch<{ patch: PartialNotificationWithId }>(
       throw error;
     }
 
-    ctx.body = ok(result.data);
+    const updatedNotification = result.data;
+
+    sendToClients(Channel.NOTIFICATION, { entity: updatedNotification._id, action: 'updated', data: updatedNotification }, updatedNotification.groups);
+
+    ctx.body = ok(updatedNotification);
   })
 );
 
@@ -113,7 +122,11 @@ router.delete<{ _id: ObjectId }>(
       throw error;
     }
 
-    ctx.body = ok(result.data);
+    const deletedNotification = result.data;
+
+    sendToClients(Channel.NOTIFICATION, { entity: deletedNotification._id, action: 'updated', data: deletedNotification }, deletedNotification.groups);
+
+    ctx.body = ok(deletedNotification);
   })
 );
 
