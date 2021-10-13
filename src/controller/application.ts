@@ -107,7 +107,6 @@ router.patch<{ patch: PartialApplicationWithId }>(
     }
 
     const updatedApp = result.data;
-    console.log(updatedApp);
 
     sendToClients(Channel.APP, { entity: updatedApp._id, action: 'updated', data: updatedApp }, updatedApp.groups);
 
