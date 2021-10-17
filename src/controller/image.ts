@@ -3,6 +3,7 @@ import multer from '@koa/multer';
 import { uploadImage } from '../peripheral/storage';
 import { ok } from '../common/Result';
 import { middlewareGuard } from '../middleware/middlewareGuard';
+import { adminsOnly } from '../middleware/adminsOnly';
 
 const router = new Router({
   prefix: '/image'
@@ -10,7 +11,9 @@ const router = new Router({
 
 const upload = multer();
 
-router.post('/', upload.single('image'),
+router.post('/',
+  adminsOnly,
+  upload.single('image'),
   middlewareGuard(async ctx => {
     const { originalname, buffer } = ctx.file;
 
