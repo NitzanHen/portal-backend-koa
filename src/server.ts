@@ -9,7 +9,7 @@ import { CtxState } from './common/CtxState';
 import { loggerMiddleware } from './middleware/loggerMiddleware';
 import { logger } from './middleware/logger';
 import { initWebsocketServer } from './websocket/wss';
-import { authenticateMiddleware } from './middleware/authenticate';
+import { authenticateMiddleware } from './middleware/authenticateMiddleware';
 
 const app = new Koa<CtxState>();
 
