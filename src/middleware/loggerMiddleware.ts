@@ -1,6 +1,6 @@
 import { cyan, green, red, redBright, yellow, grey, magenta, bold } from 'chalk';
 import { Middleware } from 'koa';
-import { logger } from './logger';
+import { logger } from '../common/logger';
 
 /**
  * Logs incoming requests and outgoing responses, response times, etc. 

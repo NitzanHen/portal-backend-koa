@@ -3,7 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { ObjectId } from 'bson';
 import { magenta } from 'chalk';
 import { UserWithId } from '../model/User';
-import { logger } from '../middleware/logger';
+import { logger } from '../common/logger';
 import { authenticate } from '../auth/authenticate';
 import { SocketListener } from './SocketListener';
 import { Channel } from './Channel';

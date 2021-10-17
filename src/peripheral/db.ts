@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 import { getEnvVariableSafely } from '../common/getEnvVariableSafely';
-import { logger } from '../middleware/logger';
+import { logger } from '../common/logger';
 // import { logger } from './logger';
 
 const dbConnectionString = getEnvVariableSafely('DB_CONN_STR');

@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { getEnvVariableSafely } from '../common/getEnvVariableSafely';
 import { AsyncResult, err, ok } from '../common/Result';
 import { safeTry } from '../common/safeTry';
-import { logger } from '../middleware/logger';
+import { logger } from '../common/logger';
 import { UserWithId } from '../model/User';
 import { userService } from '../service/UserService';
 

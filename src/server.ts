@@ -7,7 +7,7 @@ import { WebSocketServer } from 'ws';
 import loadControllers from './controller/index';
 import { CtxState } from './common/CtxState';
 import { loggerMiddleware } from './middleware/loggerMiddleware';
-import { logger } from './middleware/logger';
+import { logger } from './common/logger';
 import { initWebsocketServer } from './websocket/wss';
 import { authenticateMiddleware } from './middleware/authenticateMiddleware';
 
