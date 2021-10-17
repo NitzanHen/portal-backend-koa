@@ -77,7 +77,7 @@ router.post<{ app: Application }>(
 
     sendToClients(Channel.APP, { entity: createdApp._id, action: 'created', data: createdApp }, createdApp.groups);
 
-    ctx.body = ok(result.data);
+    ctx.body = ok(createdApp);
   })
 );
 
